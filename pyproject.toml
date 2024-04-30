@@ -1,0 +1,48 @@
+[tool.poetry]
+name = "python-template"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+
+[tool.poetry.dependencies]
+python = ">=3.10.0"
+
+[tool.pyright]
+# https://github.com/microsoft/pyright/blob/main/docs/configuration.md
+useLibraryCodeForTypes = true
+exclude = [".cache"]
+
+[tool.ruff]
+# https://beta.ruff.rs/docs/configuration/
+select = [
+  "E",
+  "F",
+  "W",
+  "I",
+  "B",
+  "C4",
+  "ARG",
+  "SIM",
+  "PIE",
+  "BLE",
+  "FBT",
+  "ISC",
+  "RSE",
+  "RET",
+  "SLOT",
+  "PERF",
+  "FURB",
+  "RUF",
+]
+ignore = ["SIM105", "FBT003"]
+
+line-length = 90
+
+  [tool.ruff.isort]
+  lines-after-imports = 2
+  # \/ will eventually be default in isort
+  combine-as-imports = true
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

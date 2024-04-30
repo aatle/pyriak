@@ -1,0 +1,123 @@
+__all__ = ['StateManager']
+
+from collections.abc import Iterable
+from typing import Any, TypeVar
+
+from pyriak import EventQueue, subclasses
+from pyriak.events import StateAdded, StateRemoved
+
+
+_T = TypeVar('_T')
+_D = TypeVar('_D')
+
+
+class StateManager:
+  """
+
+  StateManager structure is very similar to an Entity.
+  """
+
+  __slots__ = '_states', 'event_queue', '__weakref__'
+
+  def __init__(
+    self, states: Iterable[Any] = (), /, event_queue: EventQueue | None = None
+  ):
+    self.event_queue = event_queue
+    self._states: dict[type, Any] = {}
+    self.add(*states)
+
+  def add(self, *states: Any) -> None:
+    self_states = self._states
+    event_queue = self.event_queue
+    for state in states:
+      state_type = type(state)
+      if state_type in self_states:
+        other_state = self_states[state_type]
+        if other_state is state or other_state == state:
+          continue
+        if event_queue is not None:
+          event_queue.append(StateRemoved(other_state))
+      self_states[state_type] = state
+      if event_queue is not None:
+        event_queue.append(StateAdded(state))
+
+  def remove(self, *states: Any) -> None:
+    self_states = self._states
+    event_queue = self.event_queue
+    for state in states:
+      state_type = type(state)
+      try:
+        other_state = self_states[state_type]
+      except KeyError:
+        pass
+      else:
+        if other_state is state or other_state == state:
+          del self_states[state_type]
+          if event_queue is not None:
+            event_queue.append(StateRemoved(state))
+          continue
+      raise ValueError(state)
+
+  def __call__(self, *state_types: type[_T]) -> list[_T]:
+    states = self._states
+    return [
+      states[state_type]
+      for state_type in {
+        state_type: None for cls in state_types for state_type in subclasses(cls)
+      }  # dict instead of set to guarantee stable ordering while still removing dupes
+      if state_type in states
+    ]
+
+  def __getitem__(self, state_type: type[_T], /) -> _T:
+    states = self._states
+    for cls in subclasses(state_type):
+      if cls in states:
+        return states[cls]
+    raise KeyError(state_type)
+
+  def __setitem__(self, state_type: type[_T], state: _T, /):
+    self.remove(*self(state_type))
+    self.add(state)
+
+  def __delitem__(self, state_type: type, /):
+    self.remove(self[state_type])
+
+  def get(self, state_type: type[_T], default: _D = None, /) -> _T | _D:
+    states = self._states
+    for cls in subclasses(state_type):
+      if cls in states:
+        return states[cls]
+    return default
+
+  def pop(self, state_type: type[_T], default: _D = ..., /) -> _T | _D:
+    try:
+      state = self[state_type]
+    except KeyError:
+      if default is Ellipsis:
+        raise
+      return default
+    self.remove(state)
+    return state
+
+  def types(self):
+    return self._states.keys()
+
+  def __iter__(self):
+    return iter(self._states.values())
+
+  def __reversed__(self):
+    return reversed(self._states.values())
+
+  def __len__(self):
+    return len(self._states)
+
+  def __contains__(self, obj: Any, /):
+    if isinstance(obj, type):
+      states = self._states
+      for cls in subclasses(obj):
+        if cls in states:
+          return True
+    return False
+
+  def clear(self):
+    self.remove(*self)
