@@ -1,11 +1,17 @@
-[tool.poetry]
-name = "python-template"
-version = "0.1.0"
-description = ""
-authors = ["Your Name <you@example.com>"]
-
-[tool.poetry.dependencies]
-python = ">=3.10.0"
+[project]
+name = "pyriak"
+version = "0.0.1"
+authors = [
+  { name="aatle", email="" },
+]
+description = "An implementation of Entity Component System architecture for Python."
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
 
 [tool.pyright]
 # https://github.com/microsoft/pyright/blob/main/docs/configuration.md
@@ -42,7 +48,3 @@ line-length = 90
   lines-after-imports = 2
   # \/ will eventually be default in isort
   combine-as-imports = true
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
