@@ -4,7 +4,7 @@ version = "0.0.1"
 authors = [
   { name="aatle", email="" },
 ]
-description = "An implementation of Entity Component System architecture for Python."
+description = "A lightweight implementation of Entity Component System architecture for Python."
 readme = "README.md"
 requires-python = ">=3.10"
 classifiers = [
