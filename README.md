@@ -1,5 +1,5 @@
 # pyriak
-An implementation of Entity Component System architecture for Python.
+A lightweight implementation of Entity Component System architecture for Python.
 
 Originally created August 2, 2022
 
@@ -14,18 +14,6 @@ types -
 - Components (any)
 - Events (any)
 - States (any)
-
-
-- q Spaces
-  > q SystemManagers
-    > qr Systems
-    > qr Events
-  > q EntityManagers
-    > qr Entities
-      > qrs Components
-  > q StateManagers
-    > qr States
-
 
 Rules:
 
