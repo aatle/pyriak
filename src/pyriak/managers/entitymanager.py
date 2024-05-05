@@ -217,7 +217,7 @@ class EntityManager:
       {
         id: self_entities[id]
         for id in merge(*[
-          self_component_types[typ]
+          self_component_types[typ]  # noqa: SIM401
           if typ in self_component_types else set()
           for typ in types
         ])
