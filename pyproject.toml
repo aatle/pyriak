@@ -18,6 +18,7 @@ Issues = "https://github.com/aatle/pyriak/issues"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
+
 [tool.ruff]
 target-version = "py311"
 line-length = 90
@@ -47,5 +48,4 @@ ignore = ["SIM105", "FBT003"]
 
 [tool.ruff.lint.isort]
 lines-after-imports = 2
-# \/ will eventually be default in isort
 combine-as-imports = true
