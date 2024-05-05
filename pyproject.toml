@@ -19,7 +19,10 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
-# https://beta.ruff.rs/docs/configuration/
+target-version = "py311"
+line-length = 90
+
+[tool.ruff.lint]
 select = [
   "E",
   "F",
@@ -37,13 +40,12 @@ select = [
   "RET",
   "SLOT",
   "PERF",
-  "FURB",
   "RUF",
+  # "FURB",
 ]
 ignore = ["SIM105", "FBT003"]
-line-length = 90
 
-  [tool.ruff.isort]
-  lines-after-imports = 2
-  # \/ will eventually be default in isort
-  combine-as-imports = true
+[tool.ruff.lint.isort]
+lines-after-imports = 2
+# \/ will eventually be default in isort
+combine-as-imports = true
