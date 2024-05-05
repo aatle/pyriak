@@ -94,7 +94,7 @@ def tagclass(*args) -> type:
   """Make a tag class.
 
   A tag class has instances that are all equal and carry no mutable/instance data.
-  These instances help serve as tags, or markers, which can be useful in component queries.
+  These instances serve as tags, or markers, which can be useful in component queries.
 
   Ways to use tag:
   - plain decorator: mutates class inplace
