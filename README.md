@@ -1,100 +1,20 @@
 # pyriak
 A lightweight implementation of Entity Component System architecture for Python.
 
-Originally created August 2, 2022
+(Originally created August 2, 2022.)
 
 
-ECS Implementation:
-
-types -
-- Space
-- Managers
-- Systems
-- Entities
-- Components (any)
-- Events (any)
-- States (any)
-
-Rules:
-
-- All data is contained within Entities and their Components, and States
-
-- Entities hold:
-  - Any number of Components (Component types must be unique)
-  - A single entity ID, guaranteed unique in the entity's lifetime
-
-- Components hold:
-  - Data
-  - Some simple methods (can only affect self's data)
-    - Getter, Setter, Deleter methods
-    - Data interpretation methods
-    - Data manipulation methods
-- A Component can only have one existing owner Entity at any given time
-- A Component can only be directly stored long term in an Entity
-
-- The Game holds:
-  - One SystemManager
-  - One EntityManager
-  - Ideally, NOTHING else
-
-- Systems hold:
-  - Behavior, scripts
-- Systems query the EntityManager for Entities,
-  which hold the components the systems work on
+## Concepts
 
 
 
 
-Possible extensions:
-- system concurrency by declaring the component types the systems read/write with
-- entity pool
 
 
-TO DO:
-- change SpaceCallback call signature
-- 'take_first' merge function `lambda *sets: sets[0]`
-- fix ellipsis kwarg typing
-- use mypy typecheck
 
-- dynamic handlers?
-- 3.11 typing features
-- fix multibinding typing
-- check set_key typing
-- convert _bindings_ to EventHandler dict keys
-- system "new" method instantiation
-- __future__.annotations
-- type aliases
-- possibly entity, stmgr getitem iterable
-- 'direct', 'indirect', 'strict', 'immediate' vocab docs
-- validate subclasses: hash, mro
-- sys mgr expose handlers + bind predicate/filter + _Binding public
-- __contains__ TypeError raise?
-- picklable __setstate__ __getstate__ __copy__ classes
-- 'processor' game pump generator yield event method, 'event loop'
-- discard method
-- possibly entity and statemanager base class (better for user subclassing)
-- keys method (for dict protocol)
-- improve error messages
-- raise from None bad
-- views, items methods: mappingproxy
-- __eq__, remove __hash__: mgrs
-- types(*types) method functionality all mgrs+entity ?
-- entities from ids: itertools helpers in entitymgr
-- 'add', 'remove' methods return value
-- entity mgr garbage collection behavior (currently undefined?)
-- game __call__ use ?
-- more container (set) dunder methods, operations
-- copy methods
-- more positional only arguments
-- more system config
-- str and repr methods all
-- place documentation in code, along with all rules (style guide first)
-- optimization through profiling, scalene (in a game)
-- for optimization: consider cython
-- make imported module variables private (consistency)
-- python version lower in poetry dependencies ? find min python version
-- pyright generator issue (overloads)
-- review and rewrite readme.txt
+## Usage
+
+
 
 
 
@@ -108,9 +28,6 @@ initialize.py
 exit.py
 camera_shake.py
 
-
-
-NOTES:
 
 More of an 'ECSSE' engine: Entity, Component, System, State, Event
 
@@ -175,42 +92,113 @@ GameState -> GameScene, GameScreen, GameStatus, GameStage
 StateMachine, WalkingState -> PhaseMachine, WalkingPhase
 
 
+### Entity creation
+Any entity must first be created and populated with components.
 
-How to create entities?
 A system can directly create and populate an entity.
-A module like those for events or components can provide functions that
-produce "batches" of more than one component, sometimes with some parameters for customization.
-It is also easy to customize and change the components after the entity/batch has been created.
-(Do not nest batch making, let the user combine all of the batches necessary.)
-These batches are almost like their own huge components.
+This system may decide itself to create an entity, or handle an event that
+directly tells it to create one.
+```py
+player = space.entities.create(
+  components.Player(),
+  components.CameraFocus(),
+  components.Sprite(),
+)
+```
+A listening system can extend a created entity.
+```py
+@bind(ComponentAdded, 200, RocketBooster):
+def add_rocket_exhaust(space, event):
+  event.entity.add(ParticleEmitter(rocket_particles))
+```
+
+Often, multiple systems will need to create a certain set of components that are not
+related enough to put under a single component, but common enough to necessitate code reuse.
+A dedicated module can provide functions that
+produce a "batch", a set of components, sometimes with parameters for customization.
+```py
+# batches.py
+def spaceship(radius=20):
+  body = components.Body(radius)
+  body.collision_type = 'spaceship'
+  return body, components.Engine(), components.Sprite(spaceship_sprite)
+...
+```
+```py
+# systems/player.py
+import batches
+...
+player = space.entities.create(
+  *batches.spaceship(),
+  components.CameraFocus(),
+  components.PlayerController()
+)
+enemy = space.entities.create(
+  *batches.spaceship(),
+  components.AIController()
+)
+```
+It is also easy to customize or initialize the components after the entity and batch have been created
+as opposed to passing in customization parameters to the batch function.
+
 Small, individual components may be created directly by systems.
-Batch functions should only be made when necessary:
-- repeated at least twice, and especially when a lot of code
-- likely to reuse
-Batch functions should not be made for:
-- a large, unique set of components for a specific entity, that cannot be reused by other code
-- combining multiple batches into one (defeats the purpose of composition)
-- a batch meant to represent a unique entity, similarly to a class, that only appears once
-It is preferred to have smaller batches, so break down large batches.
+Batch functions should only be made when necessary, for when it is likely to be reused:
+repeated at least twice, lots of boilerplate.
+Batch functions should not be made for a large, unique set of components for a specific entity.
+It is preferable to have smaller batches to allow for more control in choosing which components to use.
 
-Components should represent one, indivisible thing.
-Components can be created large and then later broken down into useful parts.
+A batch function that calls another batch function mimics inheritance, which can lead to
+avoidable problems.
+Batches should be considered large components, not a standalone pseudo-class.
+(However, a batch function that *only* calls other batch functions is fine because it
+does not create any components itself, so its use is not directly required by anything.)
 
+Also note that the components should represent one, indivisible thing.
+Components can be created large and then later broken down into a batch of multiple components.
+ 
 
-Removed feature storage:
-```
-def load_package(package: str, /) -> dict[str, _ModuleType]:
-  """Loads all modules and packages (recursively) in a package.
+## TO DO:
+- change SpaceCallback call signature
+- 'take_first' merge function `lambda *sets: sets[0]`
+- fix ellipsis kwarg typing
+- use mypy typecheck
 
-  This is so that the modules can be accessed without importing them.
-  All errors are propagated.
-  """
-  module = _import_module(package)
-  try:
-    path = module.__path__
-  except AttributeError:
-    raise ImportError(f'{module!r} is not a package') from None
-  return {
-    (name:=info.name): _import_module(name) for info in _walk_packages(path, package+'.')
-  }
-```
+- dynamic handlers?
+- 3.11 typing features
+- fix multibinding typing
+- check set_key typing
+- convert _bindings_ to EventHandler dict keys
+- system "new" method instantiation
+- `__future__.annotations`
+- type aliases
+- possibly entity, stmgr getitem iterable
+- 'direct', 'indirect', 'strict', 'immediate' vocab docs
+- validate subclasses: hash, mro
+- sys mgr expose handlers + bind predicate/filter + _Binding public
+- `__contains__` TypeError raise?
+- picklable `__setstate__ __getstate__ __copy__` classes
+- 'processor' game pump generator yield event method, 'event loop'
+- discard method
+- possibly entity and statemanager base class (better for user subclassing)
+- keys method (for dict protocol)
+- improve error messages
+- raise from None bad
+- views, items methods: mappingproxy
+- `__eq__`, remove `__hash__`: mgrs
+- types(*types) method functionality all mgrs+entity ?
+- entities from ids: itertools helpers in entitymgr
+- 'add', 'remove' methods return value
+- entity mgr garbage collection behavior (currently undefined?)
+- game `__call__` use ?
+- more container (set) dunder methods, operations
+- copy methods
+- more positional only arguments
+- more system config
+- str and repr methods all
+- place documentation in code, along with all rules (style guide first)
+- optimization through profiling, scalene (in a game)
+- for optimization: consider cython
+- make imported module variables private (consistency)
+- python version lower in poetry dependencies ? find min python version
+- pyright generator issue (overloads)
+- review and rewrite readme.txt
