@@ -13,26 +13,26 @@ class Space:
 
   def __init__(
     self, *,
-    systems: managers.SystemManager = ...,
-    entities: managers.EntityManager = ...,
-    states: managers.StateManager = ...,
-    event_queue: EventQueue = ...
+    systems: managers.SystemManager | None = None,
+    entities: managers.EntityManager | None = None,
+    states: managers.StateManager | None = None,
+    event_queue: EventQueue | None = None
   ):
     """A new Space instance, which glues together the managers and the event queue.
 
     By default, creates the EntityManager, StateManager, and SystemManager.
     """
-    if systems is Ellipsis:
+    if systems is None:
       systems = managers.SystemManager()
       systems.space = self
     self.systems = systems
-    if entities is Ellipsis:
+    if entities is None:
       entities = managers.EntityManager()
     self.entities = entities
-    if states is Ellipsis:
+    if states is None:
       states = managers.StateManager()
     self.states = states
-    if event_queue is Ellipsis:
+    if event_queue is None:
       event_queue = deque()
     self.event_queue = event_queue
 
@@ -42,15 +42,7 @@ class Space:
 
   @event_queue.setter
   def event_queue(self, value: EventQueue):
-    self._event_queue = value
-    if self.entities is not None:
-      self.entities.event_queue = value
-    if self.states is not None:
-      self.states.event_queue = value
-
-  @event_queue.deleter
-  def event_queue(self):
-    del self._event_queue
+    self._event_queue = self.entities.event_queue = self.states.event_queue = value
 
   @overload
   def query(self, query: Query, /) -> ComponentQueryResult: ...
