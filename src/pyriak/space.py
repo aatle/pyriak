@@ -43,9 +43,10 @@ class Space:
   @event_queue.setter
   def event_queue(self, value: EventQueue):
     self._event_queue = value
-    for manager in (self.entities,self.states):
-      if manager is not None:
-        manager.event_queue = value
+    if self.entities is not None:
+      self.entities.event_queue = value
+    if self.states is not None:
+      self.states.event_queue = value
 
   @event_queue.deleter
   def event_queue(self):
