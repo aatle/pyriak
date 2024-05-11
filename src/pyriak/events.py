@@ -14,7 +14,7 @@ __all__ = [
 ]
 
 from collections.abc import Hashable, Iterable
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from pyriak import (
   Callback as _Callback,
@@ -57,7 +57,7 @@ class SendEvent:
   The actual SendEvent instance itself is never processed.
   """
 
-  def __init__(self, event: Any, *receivers: 'System'):
+  def __init__(self, event: object, *receivers: 'System'):
     self.event = event
     self.receivers = set(receivers)
 
@@ -67,13 +67,13 @@ def _component_type_key(event: 'ComponentAdded | ComponentRemoved') -> Iterable[
 
 @_set_key(_component_type_key)
 class ComponentAdded:
-  def __init__(self, entity: 'Entity', component: Any):
+  def __init__(self, entity: 'Entity', component: object):
     self.entity = entity
     self.component = component
 
 @_set_key(_component_type_key)
 class ComponentRemoved:
-  def __init__(self, entity: 'Entity', component: Any):
+  def __init__(self, entity: 'Entity', component: object):
     self.entity = entity
     self.component = component
 
@@ -157,10 +157,10 @@ def _state_type_key(event: 'StateAdded | StateRemoved') -> Iterable[type]:
 
 @_set_key(_state_type_key)
 class StateAdded:
-  def __init__(self, state: Any):
+  def __init__(self, state: object):
     self.state = state
 
 @_set_key(_state_type_key)
 class StateRemoved:
-  def __init__(self, state: Any):
+  def __init__(self, state: object):
     self.state = state
