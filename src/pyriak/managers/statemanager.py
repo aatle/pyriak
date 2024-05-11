@@ -97,7 +97,7 @@ class StateManager:
     try:
       state = self[state_type]
     except KeyError:
-      if default is Ellipsis:
+      if default is _SENTINEL:
         raise
       return default
     self.remove(state)
