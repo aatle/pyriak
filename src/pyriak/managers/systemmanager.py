@@ -438,9 +438,9 @@ class SystemManager:
       ev_t: all_handlers[ev_t] for ev_t in event_type.__mro__ if ev_t in all_handlers
     }
     if not inherit_handlers:
-      event_handlers = (
-        [] if not key_functions.exists(event_type) else {NoKey: []}
-      )  # type: ignore
+      event_handlers: list[
+        _EventHandler] | dict[Hashable | NoKeyType, list[_EventHandler]
+      ] = [] if not key_functions.exists(event_type) else {NoKey: []}
       all_handlers[event_type] = event_handlers
       return event_handlers
     # dicts with ignored values are used (instead of lists or sets)
@@ -454,7 +454,7 @@ class SystemManager:
         event_handlers.update(dict.fromkeys(handlers))  # type: ignore
       event_handlers = self._sorted_handlers(event_handlers)  # type: ignore
     else:
-      event_handlers: dict[
+      key_event_handlers: dict[
         Hashable | NoKeyType, list[_EventHandler]
       ] = {NoKey: {}}  # type: ignore
       nokey_handlers_list = []
@@ -466,17 +466,17 @@ class SystemManager:
           if key is NoKey:
             nokey_handlers_list.append(subhandlers)
             continue
-          if key in event_handlers:
-            event_handlers[key].update(dict.fromkeys(subhandlers))  # type: ignore
+          if key in key_event_handlers:
+            key_event_handlers[key].update(dict.fromkeys(subhandlers))  # type: ignore
           else:
-            event_handlers[key] = dict.fromkeys(subhandlers)  # type: ignore
+            key_event_handlers[key] = dict.fromkeys(subhandlers)  # type: ignore
       inherit_nokey_handlers = {
         h: None for nokey_handlers in nokey_handlers_list for h in nokey_handlers
       }
-      for subhandlers in event_handlers.values():
+      for subhandlers in key_event_handlers.values():
         subhandlers.update(inherit_nokey_handlers)  # type: ignore
       sorted_handlers = self._sorted_handlers
-      event_handlers = {k: sorted_handlers(v) for k, v in event_handlers.items()}
+      key_event_handlers = {k: sorted_handlers(v) for k, v in key_event_handlers.items()}
     all_handlers[event_type] = event_handlers
     return event_handlers
 
