@@ -1,7 +1,7 @@
 __all__ = ['Entity']
 
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, NewType, TypeVar, overload
+from typing import TYPE_CHECKING, NewType, TypeVar, overload
 from uuid import uuid4
 
 from pyriak import _SENTINEL, dead_weakref, subclasses
@@ -24,19 +24,19 @@ _D = TypeVar('_D')
 class Entity:
   __slots__ = 'id', '_components', '_manager', '__weakref__'
 
-  def __init__(self, components: Iterable[Any] = (), /):
+  def __init__(self, components: Iterable[object] = (), /):
     self.id: EntityId = self.new_id()
     self._manager: weakref[EntityManager] = dead_weakref
-    comp_dict = {}
+    comp_dict: dict[type, object] = {}
     for comp in components:
       comp_type = type(comp)
       if comp_type in comp_dict and (
           (other := comp_dict[comp_type]) is comp or other == comp):
         continue
       comp_dict[comp_type] = comp
-    self._components: dict[type, Any] = comp_dict
+    self._components: dict[type, object] = comp_dict
 
-  def add(self, *components: Any) -> None:
+  def add(self, *components: object) -> None:
     self_components = self._components
     events = []
     append_event = events.append
@@ -53,7 +53,7 @@ class Entity:
     if manager is not None:
       manager._components_added(self.id, components, events)
 
-  def remove(self, *components: Any) -> None:
+  def remove(self, *components: object) -> None:
     self_components = self._components
     manager = self._manager()
     for i, component in enumerate(components):
@@ -129,7 +129,7 @@ class Entity:
   def __len__(self):
     return len(self._components)
 
-  def __contains__(self, obj: Any, /):
+  def __contains__(self, obj: object, /):
     if isinstance(obj, type):
       components = self._components
       for cls in subclasses(obj):
@@ -137,7 +137,7 @@ class Entity:
           return True
     return False
 
-  def __eq__(self, other: Any, /):
+  def __eq__(self, other: object, /):
     if self is other:
       return True
     if isinstance(other, Entity):

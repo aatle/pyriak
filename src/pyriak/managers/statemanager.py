@@ -1,7 +1,7 @@
 __all__ = ['StateManager']
 
 from collections.abc import Iterable
-from typing import Any, TypeVar, overload
+from typing import TypeVar, overload
 
 from pyriak import _SENTINEL, EventQueue, subclasses
 from pyriak.events import StateAdded, StateRemoved
@@ -20,13 +20,13 @@ class StateManager:
   __slots__ = '_states', 'event_queue', '__weakref__'
 
   def __init__(
-    self, states: Iterable[Any] = (), /, event_queue: EventQueue | None = None
+    self, states: Iterable[object] = (), /, event_queue: EventQueue | None = None
   ):
     self.event_queue = event_queue
-    self._states: dict[type, Any] = {}
+    self._states: dict[type, object] = {}
     self.add(*states)
 
-  def add(self, *states: Any) -> None:
+  def add(self, *states: object) -> None:
     self_states = self._states
     event_queue = self.event_queue
     for state in states:
@@ -41,7 +41,7 @@ class StateManager:
       if event_queue is not None:
         event_queue.append(StateAdded(state))
 
-  def remove(self, *states: Any) -> None:
+  def remove(self, *states: object) -> None:
     self_states = self._states
     event_queue = self.event_queue
     for state in states:
@@ -115,7 +115,7 @@ class StateManager:
   def __len__(self):
     return len(self._states)
 
-  def __contains__(self, obj: Any, /):
+  def __contains__(self, obj: object, /):
     if isinstance(obj, type):
       states = self._states
       for cls in subclasses(obj):
