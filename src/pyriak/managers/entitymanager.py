@@ -1,7 +1,7 @@
 __all__ = ['EntityManager']
 
 from collections.abc import Iterable, Iterator, KeysView
-from typing import Any, Callable, NoReturn, TypeVar, overload
+from typing import Callable, NoReturn, TypeVar, overload
 from weakref import ref as weakref
 
 from pyriak import _SENTINEL, EventQueue, dead_weakref, subclasses
@@ -42,18 +42,18 @@ class _Components:
   def types(self) -> KeysView[type]:
     return self._manager()._component_types.keys()
 
-  def __iter__(self) -> Iterator[Any]:
+  def __iter__(self) -> Iterator[object]:
     for entity in self._manager():
       yield from entity
 
-  def __reversed__(self) -> Iterator[Any]:
+  def __reversed__(self) -> Iterator[object]:
     for entity in reversed(self._manager()):
       yield from reversed(entity)
 
   def __len__(self):
     return sum(len(entity) for entity in self._manager()._entities.values())
 
-  def __contains__(self, obj: Any, /):
+  def __contains__(self, obj: object, /):
     types = self._manager()._component_types
     if isinstance(obj, type):
       for cls in subclasses(obj):
@@ -101,7 +101,7 @@ class EntityManager:
           *[ComponentAdded(entity, component) for component in entity]
         ])
 
-  def create(self, *components: Any) -> Entity:
+  def create(self, *components: object) -> Entity:
     """Create an Entity with the given components, add it to self, and return it.
 
     The returned Entity can, of course, be directly modified.
@@ -267,7 +267,7 @@ class EntityManager:
   def __len__(self):
     return len(self._entities)
 
-  def __contains__(self, obj: Any, /):
+  def __contains__(self, obj: object, /):
     if isinstance(obj, Entity):
       return obj.id in self._entities
     return obj in self._entities
@@ -276,7 +276,7 @@ class EntityManager:
     self.remove(*self)
 
   def _components_added(
-    self, entity_id: EntityId, components: Iterable[Any], events: Iterable[Any], /
+    self, entity_id: EntityId, components: Iterable[object], events: Iterable[object], /
   ) -> None:
     component_types = self._component_types
     for component_type in {
@@ -291,7 +291,7 @@ class EntityManager:
     if (queue := self.event_queue) is not None:
       queue.extend(events)
 
-  def _components_removed(self, entity: Entity, components: Iterable[Any], /) -> None:
+  def _components_removed(self, entity: Entity, components: Iterable[object], /) -> None:
     component_types = self._component_types
     entity_id = entity.id
     for component_type in {
