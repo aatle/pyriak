@@ -25,6 +25,7 @@ from collections.abc import (
 from enum import Enum as _Enum
 from typing import (
   Any as _Any,
+  Generic as _Generic,
   Literal as _Literal,
   TypeAlias as _TypeAlias,
   TypeVar as _TypeVar,
@@ -137,20 +138,17 @@ def tagclass(*args) -> type:
   return cls  # noqa: RET504
 
 
-class Callback:
+class Callback(_Generic[_T]):
   """Built-in callback."""
 
-  def __init__(self, callback: _Callable[..., _Any], /, *args, **kwargs):
+  def __init__(self, callback: _Callable[..., _T], /, *args: _Any, **kwargs: _Any):
     self.callback = callback
-    self.args = args
+    self.args = list(args)
     self.kwargs = kwargs
 
-  def __call__(self, /, *args, **kwargs):
-    """Execute self's callback. Return the return value of the callback.
-
-    Args are passed first, then self's args, then kwargs, and lastly, self's kwargs.
-    """
-    return self.callback(*args, *self.args, **kwargs, **self.kwargs)
+  def __call__(self, /) -> _T:
+    """Execute self's callback with self's args and kwargs."""
+    return self.callback(*self.args, **self.kwargs)
 
 
 class _Sentinel(_Enum):

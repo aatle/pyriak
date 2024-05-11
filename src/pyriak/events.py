@@ -14,7 +14,7 @@ __all__ = [
 ]
 
 from collections.abc import Hashable, Iterable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeVar
 
 from pyriak import (
   Callback as _Callback,
@@ -26,15 +26,20 @@ from pyriak import (
 
 
 if TYPE_CHECKING:
-  from pyriak import Entity, System
+  from pyriak import Entity, Space, System
   from pyriak.managers.systemmanager import _EventHandler
 
 
-class SpaceCallback(_Callback):
+_T = TypeVar('_T')
+
+
+class SpaceCallback(_Callback[_T]):
   """A SystemManager automatically calls a SpaceCallback Event when it processes one."""
 
+  # TODO: python 3.11 - callback: Callable[[Space, *_Ts], _T]
 
-#= system callback
+  def __call__(self, space: Space, /) -> _T:  # type: ignore[override]
+    return self.callback(space, *self.args, **self.kwargs)
 
 
 class SendEvent:
