@@ -65,7 +65,9 @@ del NamedTuple
 
 
 class SystemManager:
-  __slots__ = '_space', '_systems', '_handlers', '_event_queue', '__weakref__'
+  __slots__ = (
+    '_space', '_systems', '_handlers', '_key_handlers', '_event_queue', '__weakref__'
+  )
 
   def __init__(
     self,
@@ -78,9 +80,8 @@ class SystemManager:
     self._event_queue = event_queue
     # values aren't used: dict is for insertion order
     self._systems: dict[System, None] = {}
-    self._handlers: dict[
-      type, list[_EventHandler] | dict[Hashable | NoKeyType, list[_EventHandler]]
-    ] = {}
+    self._handlers: dict[type, list[_EventHandler]] = {}
+    self._key_handlers: dict[type, dict[Hashable | NoKeyType, list[_EventHandler]]] = {}
     self.add(*systems)
 
   def process(self, event: object, space: 'Space | None' = None) -> bool:
@@ -203,6 +204,7 @@ class SystemManager:
     Does not change self's space or event_queue.
     """
     self._handlers.clear()
+    self._key_handlers.clear()
     self._systems.clear()
 
   @property
@@ -425,59 +427,63 @@ class SystemManager:
             insert_handler(subhandlers, subhandler)
     return events
 
-  def _lazy_bind(
-    self, event_type: type, /
-  ) -> list[_EventHandler] | dict[Hashable | NoKeyType, list[_EventHandler]]:
+  def _lazy_bind(self, event_type: type, /) -> list[_EventHandler]:
     """Find bindings for event_type and bind them and return the handlers.
 
     Subclass instances of an event_type can be processed by superclass handlers.
     These subclasses are only bound when a subclass is processed. Hence, lazy binding.
     """
     all_handlers = self._handlers
-    inherit_handlers = {
-      ev_t: all_handlers[ev_t] for ev_t in event_type.__mro__ if ev_t in all_handlers
-    }
-    if not inherit_handlers:
-      event_handlers: list[
-        _EventHandler] | dict[Hashable | NoKeyType, list[_EventHandler]
-      ] = [] if not key_functions.exists(event_type) else {NoKey: []}
-      all_handlers[event_type] = event_handlers
-      return event_handlers
-    # dicts with ignored values are used (instead of lists or sets)
-    # to remove duplicate handlers and somewhat preserve ordering,
-    # before converting back into sorted list
-    if not key_functions.exists(event_type):
-      event_handlers = {}
-      for ev_t, handlers in inherit_handlers.items():
-        if key_functions.exists(ev_t):
-          handlers = handlers[NoKey]  # type: ignore
-        event_handlers.update(dict.fromkeys(handlers))  # type: ignore
-      event_handlers = self._sorted_handlers(event_handlers)  # type: ignore
-    else:
-      key_event_handlers: dict[
-        Hashable | NoKeyType, list[_EventHandler]
-      ] = {NoKey: {}}  # type: ignore
-      nokey_handlers_list = []
-      for ev_t, handlers in inherit_handlers.items():
-        if not key_functions.exists(ev_t):
-          nokey_handlers_list.append(dict.fromkeys(handlers))
-          continue
-        for key, subhandlers in handlers.items():  # type: ignore
-          if key is NoKey:
-            nokey_handlers_list.append(subhandlers)
-            continue
-          if key in key_event_handlers:
-            key_event_handlers[key].update(dict.fromkeys(subhandlers))  # type: ignore
-          else:
-            key_event_handlers[key] = dict.fromkeys(subhandlers)  # type: ignore
-      inherit_nokey_handlers = {
-        h: None for nokey_handlers in nokey_handlers_list for h in nokey_handlers
-      }
-      for subhandlers in key_event_handlers.values():
-        subhandlers.update(inherit_nokey_handlers)  # type: ignore
-      sorted_handlers = self._sorted_handlers
-      key_event_handlers = {k: sorted_handlers(v) for k, v in key_event_handlers.items()}
+    all_key_handlers = self._key_handlers
+    event_handlers = [
+      handler
+      for ev_t in event_type.__mro__
+      for handler in (
+        all_handlers[ev_t] if ev_t in all_handlers
+        else all_key_handlers[ev_t][NoKey] if ev_t in all_key_handlers
+        else ()
+      )
+    ]
+    if event_handlers:
+      # The dict removes duplicates while preserving order
+      event_handlers = self._sorted_handlers(dict.fromkeys(event_handlers))
     all_handlers[event_type] = event_handlers
+    return event_handlers
+
+  def _lazy_key_bind(
+    self, event_type: type, /
+  ) -> dict[Hashable | NoKeyType, list[_EventHandler]]:
+    all_handlers = self._handlers
+    all_key_handlers = self._key_handlers
+    nokey_handlers = [
+      handler for ev_t in event_type.__mro__ if ev_t in all_handlers
+      for handler in all_handlers[ev_t]
+    ]
+    inherit_key_handlers = [
+      all_key_handlers[ev_t] for ev_t in event_type.__mro__
+      if ev_t in all_key_handlers
+    ]
+    event_handlers: dict[Hashable | NoKeyType, list[_EventHandler]] = {NoKey: []}
+    if not inherit_key_handlers:
+      if nokey_handlers:
+        event_handlers[NoKey] = self._sorted_handlers(dict.fromkeys(nokey_handlers))
+      all_key_handlers[event_type] = event_handlers
+      return event_handlers
+    for key_handlers in inherit_key_handlers:
+      for key, handlers in key_handlers.items():
+        if key in event_handlers:
+          if key is NoKey:
+            nokey_handlers += handlers
+            continue
+          event_handlers[key] += handlers
+        else:
+          event_handlers[key] = list(handlers)
+    sorted_handlers = self._sorted_handlers
+    event_handlers = {
+      k: sorted_handlers(dict.fromkeys(v + nokey_handlers))
+      for k, v in event_handlers.items()
+    }
+    all_key_handlers[event_type] = event_handlers
     return event_handlers
 
   def _unbind(self, system: System, /) -> list[EventHandlerRemoved]:
