@@ -73,17 +73,6 @@ def subclasses(cls: _TypeT, /) -> _Generator[_TypeT, None, _TypeT]:
   return cls
 
 
-def mro(obj: object) -> tuple[type, ...]:
-  """Return the method resolution order (MRO) of the object as a tuple.
-
-  It is the value of the __mro__ attribute of the object's class.
-  Note that if a class object is passed in, the mro of the metaclass is returned.
-
-  (equivalent to `type(obj).__mro__)`)
-  """
-  return type(obj).__mro__
-
-
 @_overload
 def tagclass(cls: _TypeT, /) -> _TypeT: ...
 @_overload
