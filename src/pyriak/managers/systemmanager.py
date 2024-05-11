@@ -51,7 +51,7 @@ class _EventHandler(NamedTuple):
   def __call__(self, /, *args, **kwargs):
     return self.callback(*args, **kwargs)
 
-  def __eq__(self, other: Any):
+  def __eq__(self, other: object):
     if self is other:
       return True
     if isinstance(other, _EventHandler):
@@ -83,7 +83,7 @@ class SystemManager:
     ] = {}
     self.add(*systems)
 
-  def process(self, event: Any, space: 'Space | None' = None) -> bool:
+  def process(self, event: object, space: 'Space | None' = None) -> bool:
     """Handle an event. Callbacks of the event are passed space and event.
 
     If the Event type has no binds, do nothing.
@@ -191,7 +191,7 @@ class SystemManager:
   def __len__(self):
     return len(self._systems)
 
-  def __contains__(self, obj: Any, /):
+  def __contains__(self, obj: object, /):
     """Return whether obj is a system added to self (ignoring subclasses)."""
     return obj in self._systems
 
@@ -288,7 +288,7 @@ class SystemManager:
     systems = self._systems
     return sorted(handlers, key=lambda h: SortKey(h, systems))
 
-  def _get_handlers(self, event: Any, /) -> list[_EventHandler]:
+  def _get_handlers(self, event: object, /) -> list[_EventHandler]:
     event_type = type(event)
     try:
       handlers = self._handlers[event_type]
