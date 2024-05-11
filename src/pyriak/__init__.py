@@ -38,7 +38,7 @@ _T = _TypeVar('_T')
 _D = _TypeVar('_D')
 
 
-EventQueue: _TypeAlias = _MutableSequence[_Any]
+EventQueue: _TypeAlias = _MutableSequence[object]
 
 
 dead_weakref: _weakref[_Any] = _weakref(set())
