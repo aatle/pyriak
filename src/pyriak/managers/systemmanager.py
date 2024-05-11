@@ -1,6 +1,6 @@
 __all__ = ['SystemManager']
 
-from collections.abc import Generator, Hashable, Iterable
+from collections.abc import Hashable, Iterable, Iterator
 from typing import TYPE_CHECKING, Any, NamedTuple
 from weakref import ref as weakref
 
@@ -299,13 +299,11 @@ class SystemManager:
     except KeyError:
       return handlers  # type: ignore
     key = key_function(event)
-    if not isinstance(key, Generator):
+    if not isinstance(key, Iterator):
       try:
         return handlers[key]  # type: ignore
       except KeyError:
         return handlers[NoKey]  # type: ignore
-      except TypeError:
-        pass
     keys = {k for k in key if k in handlers}  # type: ignore
     if not keys:
       return handlers[NoKey]  # type: ignore

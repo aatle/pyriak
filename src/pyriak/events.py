@@ -13,7 +13,7 @@ __all__ = [
   'StateRemoved',
 ]
 
-from collections.abc import Hashable, Iterable
+from collections.abc import Hashable, Iterator
 from typing import TYPE_CHECKING
 
 from pyriak import (
@@ -61,7 +61,7 @@ class SendEvent:
     self.receivers = set(receivers)
 
 
-def _component_type_key(event: 'ComponentAdded | ComponentRemoved') -> Iterable[type]:
+def _component_type_key(event: 'ComponentAdded | ComponentRemoved') -> Iterator[type]:
   yield from type(event.component).__mro__
 
 @_set_key(_component_type_key)
@@ -100,7 +100,7 @@ class SystemRemoved:
     self.system = system
 
 
-def _handler_key(event: '_EventHandlerEvent') -> Iterable[type]:
+def _handler_key(event: '_EventHandlerEvent') -> Iterator[type]:
   yield from _subclasses(event.event_type)
 
 @_set_key(_handler_key)
@@ -151,7 +151,7 @@ class EventHandlerRemoved(_EventHandlerEvent):
   pass
 
 
-def _state_type_key(event: 'StateAdded | StateRemoved') -> Iterable[type]:
+def _state_type_key(event: 'StateAdded | StateRemoved') -> Iterator[type]:
   yield from type(event.state).__mro__
 
 @_set_key(_state_type_key)

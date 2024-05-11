@@ -1,6 +1,6 @@
 __all__ = ['key_functions', 'set_key', 'NoKey', 'NoKeyType', 'KeyFunction']
 
-from collections.abc import Callable, Hashable, Iterable, Mapping
+from collections.abc import Callable, Hashable, Iterator, Mapping
 from typing import Any, TypeAlias, TypeVar, overload
 from weakref import WeakKeyDictionary
 
@@ -29,9 +29,9 @@ class NoKeyType:
 NoKey = object.__new__(NoKeyType)
 
 
-# if return is NoKey, no key, else if return value is hashable and not generator,
-# return value is the key, else it is an iterable of keys
-KeyFunction: TypeAlias = Callable[[_T], Hashable | Iterable[Hashable] | NoKeyType]
+# if return value is NoKey, then no key, else if it is iterator (especially generator),
+# it is multiple hashable keys, else it is the key itself (must be hashable)
+KeyFunction: TypeAlias = Callable[[_T], Hashable | Iterator[Hashable] | NoKeyType]
 
 
 class EventKeyFunctions:
