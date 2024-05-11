@@ -7,10 +7,17 @@ from weakref import ref as weakref
 from pyriak import _SENTINEL, EventQueue, dead_weakref, subclasses
 from pyriak.entity import Entity, EntityId
 from pyriak.events import ComponentAdded, ComponentRemoved, EntityAdded, EntityRemoved
-from pyriak.query import ComponentQueryResult, EntityQueryResult, IdQueryResult, Query
+from pyriak.query import (
+  ComponentQueryResult,
+  EntityQueryResult,
+  IdQueryResult,
+  Query,
+  QueryResult,
+)
 
 
 _T = TypeVar('_T')
+_Q = TypeVar('_Q', bound=QueryResult)
 
 
 class _Components:
@@ -172,7 +179,7 @@ class EntityManager:
     *component_types: type,
     merge: Callable[..., set] = set.intersection,
   ) -> ComponentQueryResult: ...
-  def query(self, /, *types, merge=...):
+  def query(self, /, *types, merge=None):
     """"""
     return self._query(ComponentQueryResult, types, merge)
 
@@ -188,7 +195,7 @@ class EntityManager:
     *component_types: type,
     merge: Callable[..., set] = set.intersection,
   ) -> EntityQueryResult: ...
-  def entity_query(self, /, *types, merge=...):
+  def entity_query(self, /, *types, merge=None):
     """"""
     return self._query(EntityQueryResult, types, merge)
 
@@ -204,24 +211,24 @@ class EntityManager:
     *component_types: type,
     merge: Callable[..., set] = set.intersection,
   ) -> IdQueryResult: ...
-  def id_query(self, /, *types, merge=...):
+  def id_query(self, /, *types, merge=None):
     """"""
     return self._query(IdQueryResult, types, merge)
 
-  def _query(self, query_cls: type[_T], types, merge=..., /) -> _T:
+  def _query(self, result_cls: type[_Q], types, merge=None, /) -> _Q:
     """"""
     if len(types) == 1 and isinstance((query := types[0]), Query):
-      if merge is not Ellipsis:
+      if merge is not None:
         raise TypeError('unexpected keyword argument: merge')
       types = query.types
       merge = query.merge
-    elif merge is Ellipsis:
+    elif merge is None:
       merge = set.intersection
     if not types:
       raise ValueError('expected at least one type in component types')
     self_entities = self._entities
     self_component_types = self._component_types
-    return query_cls(
+    return result_cls(
       {
         id: self_entities[id]
         for id in merge(*[

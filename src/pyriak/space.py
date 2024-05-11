@@ -56,7 +56,7 @@ class Space:
     *component_types: type,
     merge: Callable[..., set] = set.intersection,
   ) -> ComponentQueryResult: ...
-  def query(self, /, *types, merge=...):
+  def query(self, /, *types, merge=None):
     return self.entities.query(*types, merge=merge)
 
   @overload
@@ -71,7 +71,7 @@ class Space:
     *component_types: type,
     merge: Callable[..., set] = set.intersection,
   ) -> EntityQueryResult: ...
-  def entity_query(self, /, *types, merge=...):
+  def entity_query(self, /, *types, merge=None):
     return self.entities.entity_query(*types, merge=merge)
 
   @overload
@@ -86,7 +86,7 @@ class Space:
     *component_types: type,
     merge: Callable[..., set] = set.intersection,
   ) -> IdQueryResult: ...
-  def id_query(self, /, *types, merge=...):
+  def id_query(self, /, *types, merge=None):
     return self.entities.id_query(*types, merge=merge)
 
   def process(self, event: object):
