@@ -12,8 +12,9 @@ if TYPE_CHECKING:
 
 
 _T = TypeVar('_T')
+_R = TypeVar('_R')
 
-_Callback: TypeAlias = Callable[['Space', _T], object]
+_Callback: TypeAlias = Callable[['Space', _T], _R]
 
 
 class _Binding:  #= public when expose event handlers
@@ -45,14 +46,14 @@ class _BindingWrapper:
 @overload
 def bind(
   event_type: type[_T], priority: Any, /, *, key: Hashable | NoKeyType = NoKey
-) -> Callable[[_Callback[_T]], _Callback[_T]]: ...
+) -> Callable[[_Callback[_T, _R]], _Callback[_T, _R]]: ...
 @overload
 def bind(
   event_type: type[_T], priority: Any, /, *, keys: Iterable[Hashable] = ()
-) -> Callable[[_Callback[_T]], _Callback[_T]]: ...
+) -> Callable[[_Callback[_T, _R]], _Callback[_T, _R]]: ...
 def bind(
   event_type: type[_T], priority: Any, /, *, key: Hashable | NoKeyType = NoKey, keys=()
-) -> Callable[[_Callback[_T]], _Callback[_T]]:
+) -> Callable[[_Callback[_T, _R]], _Callback[_T, _R]]:
   """Bind a callback to an event type.
 
 
@@ -76,7 +77,7 @@ def bind(
       )
     if NoKey in keys:
       raise ValueError('NoKey cannot be a key')
-  def decorator(callback: _Callback[_T], /) -> _Callback[_T]:
+  def decorator(callback: _Callback[_T, _R], /) -> _Callback[_T, _R]:
     if not isinstance(callback, _BindingWrapper):
       return _BindingWrapper(callback, {event_type: _Binding(priority, keys)})  # type: ignore
     bindings = callback._bindings_
