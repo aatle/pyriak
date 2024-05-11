@@ -75,7 +75,7 @@ class Entity:
   def __call__(self, *component_types: type[_T]) -> list[_T]:
     components = self._components
     return [
-      components[component_type]
+      components[component_type]  # type: ignore
       for component_type in {
         comp_type: None for cls in component_types for comp_type in subclasses(cls)
       }  # dict instead of set to guarantee stable ordering while still removing dupes
@@ -86,7 +86,7 @@ class Entity:
     components = self._components
     for cls in subclasses(component_type):
       if cls in components:
-        return components[cls]
+        return components[cls]  # type: ignore
     raise KeyError(component_type)
 
   def __setitem__(self, component_type: type[_T], component: _T, /):
@@ -100,7 +100,7 @@ class Entity:
     components = self._components
     for cls in subclasses(component_type):
       if cls in components:
-        return components[cls]
+        return components[cls]  # type: ignore
     return default
 
   @overload

@@ -61,7 +61,7 @@ class StateManager:
   def __call__(self, *state_types: type[_T]) -> list[_T]:
     states = self._states
     return [
-      states[state_type]
+      states[state_type]  # type: ignore
       for state_type in {
         state_type: None for cls in state_types for state_type in subclasses(cls)
       }  # dict instead of set to guarantee stable ordering while still removing dupes
@@ -72,7 +72,7 @@ class StateManager:
     states = self._states
     for cls in subclasses(state_type):
       if cls in states:
-        return states[cls]
+        return states[cls]  # type: ignore
     raise KeyError(state_type)
 
   def __setitem__(self, state_type: type[_T], state: _T, /):
@@ -86,7 +86,7 @@ class StateManager:
     states = self._states
     for cls in subclasses(state_type):
       if cls in states:
-        return states[cls]
+        return states[cls]  # type: ignore
     return default
 
   @overload
