@@ -1,10 +1,10 @@
 __all__ = ['Entity']
 
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, NewType, TypeVar
+from typing import TYPE_CHECKING, Any, NewType, TypeVar, overload
 from uuid import uuid4
 
-from pyriak import dead_weakref, subclasses
+from pyriak import _SENTINEL, dead_weakref, subclasses
 from pyriak.events import ComponentAdded, ComponentRemoved
 
 
@@ -103,7 +103,11 @@ class Entity:
         return components[cls]
     return default
 
-  def pop(self, component_type: type[_T], default: _D = ..., /) -> _T | _D:
+  @overload
+  def pop(self, component_type: type[_T], /) -> _T: ...
+  @overload
+  def pop(self, component_type: type[_T], default: _D, /) -> _T | _D: ...
+  def pop(self, component_type, default=_SENTINEL, /):
     try:
       component = self[component_type]
     except KeyError:
