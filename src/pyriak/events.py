@@ -13,11 +13,10 @@ __all__ = [
   'StateRemoved',
 ]
 
-from collections.abc import Hashable, Iterator
-from typing import TYPE_CHECKING
+from collections.abc import Callable, Hashable, Iterator
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from pyriak import (
-  Callback as _Callback,
   NoKey as _NoKey,
   set_key as _set_key,
   subclasses as _subclasses,
@@ -25,15 +24,26 @@ from pyriak import (
 
 
 if TYPE_CHECKING:
-  from pyriak import Entity, System
+  from pyriak import Entity, Space, System
   from pyriak.managers.systemmanager import _EventHandler
 
 
-class SpaceCallback(_Callback):
+_T = TypeVar('_T')
+
+
+class SpaceCallback(Generic[_T]):
   """A SystemManager automatically calls a SpaceCallback Event when it processes one."""
 
+  # TODO: python 3.11 - callback: Callable[[Space, *_Ts], _T]
 
-#= system callback
+  def __init__(self, callback: Callable[..., _T], /, *args: Any, **kwargs: Any):
+    self.callback = callback
+    self.args = list(args)
+    self.kwargs = kwargs
+
+  def __call__(self, space: Space, /) -> _T:
+    """Execute self's callback with self's args and kwargs."""
+    return self.callback(space, *self.args, **self.kwargs)
 
 
 class SendEvent:

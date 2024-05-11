@@ -13,12 +13,10 @@ __all__ = [
   'NoKey',
   'NoKeyType',
   'tagclass',
-  'Callback',
   'dead_weakref',
 ]
 
 from collections.abc import (
-  Callable as _Callable,
   Generator as _Generator,
   MutableSequence as _MutableSequence,
 )
@@ -124,22 +122,6 @@ def tagclass(*args) -> type:
     raise TypeError('tag() takes at most 3 arguments')
   cls = type(first, bases, namespace)  # required variable so dunder methods know cls
   return cls  # noqa: RET504
-
-
-class Callback:
-  """Built-in callback."""
-
-  def __init__(self, callback: _Callable[..., _Any], /, *args, **kwargs):
-    self.callback = callback
-    self.args = args
-    self.kwargs = kwargs
-
-  def __call__(self, /, *args, **kwargs):
-    """Execute self's callback. Return the return value of the callback.
-
-    Args are passed first, then self's args, then kwargs, and lastly, self's kwargs.
-    """
-    return self.callback(*args, *self.args, **kwargs, **self.kwargs)
 
 
 class _Sentinel(_Enum):
