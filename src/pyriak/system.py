@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 _T = TypeVar('_T')
 
-_Callback: TypeAlias = Callable[['Space', _T], Any]
+_Callback: TypeAlias = Callable[['Space', _T], object]
 
 
 class _Binding:  #= public when expose event handlers
