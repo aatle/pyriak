@@ -54,13 +54,14 @@ class Query:
   def __len__(self):
     return len(self._types)
 
-  def __contains__(self, obj: Any, /):
+  def __contains__(self, obj: object, /):
     return obj in self._types
 
-  def __eq__(self, other: Any, /):
+  def __eq__(self, other: object, /):
     if not isinstance(other, Query):
       return NotImplemented
-    return self._types == other._types and self._merge == other._merge
+    # TODO: investigate unusual problem with type narrowing
+    return self._types == other._types and self._merge == other._merge  # type: ignore
 
   def __hash__(self):
     return hash((self._types,self._merge))
