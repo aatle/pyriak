@@ -139,7 +139,11 @@ class EntityManager:
   def __delitem__(self, entity_id: EntityId, /):
     self.remove(self._entities[entity_id])
 
-  def get(self, entity_id: EntityId, default: _T = None, /) -> Entity | _T:
+  @overload
+  def get(self, entity_id: EntityId, /) -> Entity | None: ...
+  @overload
+  def get(self, entity_id: EntityId, default: _T, /) -> Entity | _T: ...
+  def get(self, entity_id, default=None, /):
     return self._entities.get(entity_id, default)
 
   @overload
