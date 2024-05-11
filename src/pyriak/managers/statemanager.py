@@ -1,9 +1,9 @@
 __all__ = ['StateManager']
 
 from collections.abc import Iterable
-from typing import Any, TypeVar
+from typing import Any, TypeVar, overload
 
-from pyriak import EventQueue, subclasses
+from pyriak import _SENTINEL, EventQueue, subclasses
 from pyriak.events import StateAdded, StateRemoved
 
 
@@ -89,7 +89,11 @@ class StateManager:
         return states[cls]
     return default
 
-  def pop(self, state_type: type[_T], default: _D = ..., /) -> _T | _D:
+  @overload
+  def pop(self, state_type: type[_T], /) -> _T: ...
+  @overload
+  def pop(self, state_type: type[_T], default: _D, /) -> _T | _D: ...
+  def pop(self, state_type, default=_SENTINEL, /):
     try:
       state = self[state_type]
     except KeyError:
