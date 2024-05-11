@@ -283,7 +283,7 @@ class SystemManager:
           return True
       raise ValueError
 
-  def _sorted_handlers(
+  def _sort_handlers(
     self, handlers: Iterable[_EventHandler], /
   ) -> list[_EventHandler]:
     SortKey = self._SortKey
@@ -311,7 +311,7 @@ class SystemManager:
       return handlers[NoKey]  # type: ignore
     if len(keys) == 1:
       return handlers[keys.pop()]
-    return self._sorted_handlers({
+    return self._sort_handlers({
       handler: None for key in keys for handler in handlers[key]
     })  # preserving order slightly by using a dict instead of set
 
@@ -446,7 +446,7 @@ class SystemManager:
     ]
     if event_handlers:
       # The dict removes duplicates while preserving order
-      event_handlers = self._sorted_handlers(dict.fromkeys(event_handlers))
+      event_handlers = self._sort_handlers(dict.fromkeys(event_handlers))
     all_handlers[event_type] = event_handlers
     return event_handlers
 
@@ -466,7 +466,7 @@ class SystemManager:
     event_handlers: dict[Hashable | NoKeyType, list[_EventHandler]] = {NoKey: []}
     if not inherit_key_handlers:
       if nokey_handlers:
-        event_handlers[NoKey] = self._sorted_handlers(dict.fromkeys(nokey_handlers))
+        event_handlers[NoKey] = self._sort_handlers(dict.fromkeys(nokey_handlers))
       all_key_handlers[event_type] = event_handlers
       return event_handlers
     for key_handlers in inherit_key_handlers:
@@ -478,9 +478,9 @@ class SystemManager:
           event_handlers[key] += handlers
         else:
           event_handlers[key] = list(handlers)
-    sorted_handlers = self._sorted_handlers
+    sort_handlers = self._sort_handlers
     event_handlers = {
-      k: sorted_handlers(dict.fromkeys(v + nokey_handlers))
+      k: sort_handlers(dict.fromkeys(v + nokey_handlers))
       for k, v in event_handlers.items()
     }
     all_key_handlers[event_type] = event_handlers
