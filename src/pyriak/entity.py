@@ -96,7 +96,11 @@ class Entity:
   def __delitem__(self, component_type: type, /):
     self.remove(self[component_type])
 
-  def get(self, component_type: type[_T], default: _D = None, /) -> _T | _D:
+  @overload
+  def get(self, component_type: type[_T], /) -> _T | None: ...
+  @overload
+  def get(self, component_type: type[_T], default: _D, /) -> _T | _D: ...
+  def get(self, component_type, default=None, /):
     components = self._components
     for cls in subclasses(component_type):
       if cls in components:
