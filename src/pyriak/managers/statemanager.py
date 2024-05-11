@@ -82,7 +82,11 @@ class StateManager:
   def __delitem__(self, state_type: type, /):
     self.remove(self[state_type])
 
-  def get(self, state_type: type[_T], default: _D = None, /) -> _T | _D:
+  @overload
+  def get(self, state_type: type[_T], /) -> _T | None: ...
+  @overload
+  def get(self, state_type: type[_T], default: _D, /) -> _T | _D: ...
+  def get(self, state_type, default=None, /):
     states = self._states
     for cls in subclasses(state_type):
       if cls in states:
