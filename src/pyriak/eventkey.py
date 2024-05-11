@@ -1,8 +1,10 @@
 __all__ = ['key_functions', 'set_key', 'NoKey', 'NoKeyType', 'KeyFunction']
 
 from collections.abc import Callable, Hashable, Iterable, Mapping
-from typing import Any, TypeAlias, TypeVar
+from typing import Any, TypeAlias, TypeVar, overload
 from weakref import WeakKeyDictionary
+
+from pyriak import _SENTINEL
 
 
 _T = TypeVar('_T')
@@ -45,9 +47,11 @@ class EventKeyFunctions:
     if dict is not None:
       self.update(dict)
 
-  def __call__(
-    self, event_type: type[_T], default: _D = ...
-  ) -> KeyFunction[_T] | _D:
+  @overload
+  def __call__(self, event_type: type[_T]) -> KeyFunction[_T]: ...
+  @overload
+  def __call__(self, event_type: type[_T], default: _D) -> KeyFunction[_T] | _D: ...
+  def __call__(self, event_type, default=_SENTINEL):
     """Return the key function for event_type.
 
     A key function is used to extract a key from an event of type event_type.
@@ -64,7 +68,7 @@ class EventKeyFunctions:
       key_function = get(cls)
       if key_function is not None:
         return key_function
-    if default is Ellipsis:
+    if default is _SENTINEL:
       raise KeyError(event_type)
     return default
 
@@ -84,7 +88,11 @@ class EventKeyFunctions:
       raise TypeError(f'do not use {NoKey} to denote no key function, use None instead')
     data[event_type] = key
 
-  def get(self, event_type: type[_T], default: _D = None) -> KeyFunction[_T] | None | _D:
+  @overload
+  def get(self, event_type: type[_T]) -> KeyFunction[_T] | None:...
+  @overload
+  def get(self, event_type: type[_T], default: _D) -> KeyFunction[_T] | _D: ...
+  def get(self, event_type, default=None):
     try:
       return self._data[event_type]
     except KeyError:
@@ -131,7 +139,7 @@ class EventKeyFunctions:
     self.update(other)
     return self
 
-  __copy__ = None
+  __copy__ = None  # type: ignore
 
   def copy(self):
     return self._data.copy()

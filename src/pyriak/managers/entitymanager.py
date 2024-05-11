@@ -4,7 +4,7 @@ from collections.abc import Iterable, Iterator, KeysView
 from typing import Any, Callable, NoReturn, TypeVar, overload
 from weakref import ref as weakref
 
-from pyriak import EventQueue, dead_weakref, subclasses
+from pyriak import _SENTINEL, EventQueue, dead_weakref, subclasses
 from pyriak.entity import Entity, EntityId
 from pyriak.events import ComponentAdded, ComponentRemoved, EntityAdded, EntityRemoved
 from pyriak.query import ComponentQueryResult, EntityQueryResult, IdQueryResult, Query
@@ -142,11 +142,15 @@ class EntityManager:
   def get(self, entity_id: EntityId, default: _T = None, /) -> Entity | _T:
     return self._entities.get(entity_id, default)
 
-  def pop(self, entity_id: EntityId, default: _T = ..., /) -> Entity | _T:
+  @overload
+  def pop(self, entity_id: EntityId, /) -> Entity: ...
+  @overload
+  def pop(self, entity_id: EntityId, default: _T, /) -> Entity | _T: ...
+  def pop(self, entity_id, default=_SENTINEL, /):
     try:
       entity = self._entities[entity_id]
     except KeyError:
-      if default is Ellipsis:
+      if default is _SENTINEL:
         raise
       return default
     self.remove(entity)
