@@ -2,7 +2,7 @@ __all__ = ['Space']
 
 from collections import deque
 from collections.abc import Callable
-from typing import Any, NoReturn, overload
+from typing import NoReturn, overload
 
 from pyriak import EventQueue, managers
 from pyriak.query import ComponentQueryResult, EntityQueryResult, IdQueryResult, Query
@@ -89,10 +89,10 @@ class Space:
   def id_query(self, /, *types, merge=...):
     return self.entities.id_query(*types, merge=merge)
 
-  def process(self, event: Any):
+  def process(self, event: object):
     return self.systems.process(event, space=self)
 
-  def post(self, *events: Any) -> None:
+  def post(self, *events: object) -> None:
     self.event_queue.extend(events)
 
   def pump(self, events: int | None = None) -> int:
