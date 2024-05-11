@@ -22,15 +22,15 @@ from collections.abc import (
   Generator as _Generator,
   MutableSequence as _MutableSequence,
 )
+from enum import Enum as _Enum
 from typing import (
   Any as _Any,
+  Literal as _Literal,
   TypeAlias as _TypeAlias,
   TypeVar as _TypeVar,
   overload as _overload,
 )
 from weakref import ref as _weakref
-
-from pyriak.eventkey import NoKey, NoKeyType, key_functions, set_key
 
 
 _TypeT = _TypeVar('_TypeT', bound=type)
@@ -153,9 +153,16 @@ class Callback:
     return self.callback(*args, *self.args, **kwargs, **self.kwargs)
 
 
+class _Sentinel(_Enum):
+  SENTINEL = 1
+
+_SENTINEL = _Sentinel.SENTINEL
+
+
 # circular imports
 from pyriak import _importer  # noqa: E402
 from pyriak.entity import Entity, EntityId  # noqa: E402
+from pyriak.eventkey import NoKey, NoKeyType, key_functions, set_key  # noqa: E402
 from pyriak.query import Query  # noqa: E402
 from pyriak.space import Space  # noqa: E402
 from pyriak.system import System, bind  # noqa: E402
@@ -165,4 +172,4 @@ _importer.install()  # install meta path finder for system initialization
 
 
 # cleanup namespace
-del _MutableSequence, _TypeVar, _weakref
+del _MutableSequence, _Enum, _Literal, _TypeVar, _weakref

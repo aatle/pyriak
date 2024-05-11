@@ -160,8 +160,6 @@ Components can be created large and then later broken down into a batch of multi
 ## TO DO:
 - change SpaceCallback call signature
 - 'take_first' merge function `lambda *sets: sets[0]`
-- fix ellipsis kwarg typing
-- use mypy typecheck
 
 - dynamic handlers?
 - 3.11 typing features
