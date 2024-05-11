@@ -38,7 +38,7 @@ class Entity:
 
   def add(self, *components: object) -> None:
     self_components = self._components
-    events = []
+    events: list[ComponentAdded | ComponentRemoved] = []
     append_event = events.append
     for component in components:
       component_type = type(component)
