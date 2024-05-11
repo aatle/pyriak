@@ -19,7 +19,6 @@ from typing import TYPE_CHECKING
 from pyriak import (
   Callback as _Callback,
   NoKey as _NoKey,
-  mro as _mro,
   set_key as _set_key,
   subclasses as _subclasses,
 )
@@ -63,7 +62,7 @@ class SendEvent:
 
 
 def _component_type_key(event: 'ComponentAdded | ComponentRemoved') -> Iterable[type]:
-  yield from _mro(event.component)
+  yield from type(event.component).__mro__
 
 @_set_key(_component_type_key)
 class ComponentAdded:
@@ -102,7 +101,7 @@ class SystemRemoved:
 
 
 def _handler_key(event: '_EventHandlerEvent') -> Iterable[type]:
-  return _subclasses(event.event_type)
+  yield from _subclasses(event.event_type)
 
 @_set_key(_handler_key)
 class _EventHandlerEvent:
@@ -153,7 +152,7 @@ class EventHandlerRemoved(_EventHandlerEvent):
 
 
 def _state_type_key(event: 'StateAdded | StateRemoved') -> Iterable[type]:
-  yield from _mro(event.state)
+  yield from type(event.state).__mro__
 
 @_set_key(_state_type_key)
 class StateAdded:
