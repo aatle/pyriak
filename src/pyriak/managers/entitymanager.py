@@ -79,7 +79,7 @@ class EntityManager:
     self.components = _Components()
     self.components._manager = weakref(self)  # type: ignore
     self._entities: dict[EntityId, Entity] = {}
-    self._component_types = {}
+    self._component_types: dict[type, set[EntityId]] = {}
     self.add(*entities)
 
   def add(self, *entities: Entity) -> None:
