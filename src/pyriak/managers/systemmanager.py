@@ -288,7 +288,8 @@ class SystemManager:
   ) -> list[_EventHandler]:
     SortKey = self._SortKey
     systems = self._systems
-    return sorted(handlers, key=lambda h: SortKey(h, systems))
+    # Uses dict to remove duplicates while preserving some order
+    return sorted(dict.fromkeys(handlers), key=lambda h: SortKey(h, systems))
 
   def _get_handlers(self, event: object, /) -> list[_EventHandler]:
     event_type = type(event)
@@ -311,9 +312,7 @@ class SystemManager:
       return handlers[NoKey]  # type: ignore
     if len(keys) == 1:
       return handlers[keys.pop()]
-    return self._sort_handlers({
-      handler: None for key in keys for handler in handlers[key]
-    })  # preserving order slightly by using a dict instead of set
+    return self._sort_handlers(handler for key in keys for handler in handlers[key])
 
   def _bind(self, system: System, /) -> list[EventHandlerAdded]:
     """Bind a system's handlers so that they can process events.
@@ -445,8 +444,7 @@ class SystemManager:
       )
     ]
     if event_handlers:
-      # The dict removes duplicates while preserving order
-      event_handlers = self._sort_handlers(dict.fromkeys(event_handlers))
+      event_handlers = self._sort_handlers(event_handlers)
     all_handlers[event_type] = event_handlers
     return event_handlers
 
@@ -466,7 +464,7 @@ class SystemManager:
     event_handlers: dict[Hashable | NoKeyType, list[_EventHandler]] = {NoKey: []}
     if not inherit_key_handlers:
       if nokey_handlers:
-        event_handlers[NoKey] = self._sort_handlers(dict.fromkeys(nokey_handlers))
+        event_handlers[NoKey] = self._sort_handlers(nokey_handlers)
       all_key_handlers[event_type] = event_handlers
       return event_handlers
     for key_handlers in inherit_key_handlers:
@@ -480,8 +478,7 @@ class SystemManager:
           event_handlers[key] = list(handlers)
     sort_handlers = self._sort_handlers
     event_handlers = {
-      k: sort_handlers(dict.fromkeys(v + nokey_handlers))
-      for k, v in event_handlers.items()
+      k: sort_handlers(v + nokey_handlers) for k, v in event_handlers.items()
     }
     all_key_handlers[event_type] = event_handlers
     return event_handlers
