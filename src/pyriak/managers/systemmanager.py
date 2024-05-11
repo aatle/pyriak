@@ -326,13 +326,10 @@ class SystemManager:
     Bindings of an event type are sorted by highest priority,
     then oldest system, then first one bound in system.
     """
-    try:
-      if not system._bindings_:
-        return []
-    except AttributeError:
-      if isinstance(system, System):
-        raise
-      raise TypeError(f'{system!r} is not a System') from None
+    if not isinstance(system, System):
+      raise TypeError(f'{system!r} is not a System')
+    if not system._bindings_:
+      return []
     events: list[EventHandlerAdded] = []
     all_handlers = self._handlers
     insert_handler = self._insert_handler
