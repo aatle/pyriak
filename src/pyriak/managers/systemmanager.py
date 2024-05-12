@@ -332,97 +332,106 @@ class SystemManager:
       return []
     events: list[EventHandlerAdded] = []
     all_handlers = self._handlers
+    all_key_handlers = self._key_handlers
     insert_handler = self._insert_handler
+    fromkeys = dict.fromkeys
     for name, bindings in system._bindings_.items():
       callback = getattr(system, name)
       if len(bindings) == 1:
         # the common case of only one event type for a handler (single @bind())
         [(event_type, binding)] = bindings.items()
         handler = _EventHandler(system, callback, name, binding.priority)
-        event_handlers = {
-          cls: handler for cls in subclasses(event_type) if cls in all_handlers
-        }  #= only strict
+        event_subclasses = set(subclasses(event_type))
+        key_event_types = event_subclasses & all_key_handlers.keys()
+        event_handlers = fromkeys(
+          (event_subclasses & all_handlers.keys()) | key_event_types, handler
+        )
         event_handlers[event_type] = handler
-        keys = binding.keys
-        events.append(EventHandlerAdded(handler, event_type, keys))
-        if not keys:
-          handler_keys = {}
+        if key_functions.exists(event_type):
+          key_event_types.add(event_type)
+        binding_keys = binding.keys
+        handler_keys = (
+          fromkeys(key_event_types, fromkeys(binding_keys, handler))
+          if binding_keys else {}
+        )
+        events.append(EventHandlerAdded(handler, event_type, binding_keys))
+        continue
+      event_handlers = {}
+      base_handler_keys: dict[type, dict[Hashable, _EventHandler]] = {}
+      for event_type, binding in bindings.items():
+        priority = binding.priority
+        for other_handler in event_handlers.values():
+          if priority is other_handler.priority:
+            # saves memory: duplicate handler for different event types that have same
+            # priority, is likely because multibinding is usually for similar classes
+            handler = other_handler
+            break
         else:
-          keys = dict.fromkeys(keys, handler)
-          handler_keys = {
-            cls: keys for cls in event_handlers if key_functions.exists(cls)
-          }
-      else:
-        event_handlers = {}
-        base_handler_keys = {}
-        for event_type, binding in bindings.items():
-          keys = binding.keys
-          priority = binding.priority
-          for other_handler in event_handlers.values():
-            if priority is other_handler.priority:
-              # saves memory: duplicate handler for different event types that have same
-              # priority, is likely because multibinding is usually for similar classes
-              event_handlers[event_type] = handler = other_handler
-              break
-          else:
-            event_handlers[event_type] = handler = _EventHandler(
-              system, callback, name, priority
-            )
-          if keys:
-            base_handler_keys[event_type] = dict.fromkeys(keys, handler)
-          events.append(EventHandlerAdded(handler, event_type, keys))
-        handler_keys = {}
-        for cls in {
-          cls
-          for event_type in bindings
-          for cls in subclasses(event_type)
-          if cls in all_handlers or cls in bindings
-        }:
-          # The subclasses of a bound event type shall have their keys extended by
-          # the bound event type's direct keys, if there exists a key function for it.
-          key_function_exists = key_functions.exists(cls)
-          for base in cls.__mro__:
-            # check each 'base' event type to see if its keys are needed
-            if base not in bindings:
-              continue
-            if cls not in event_handlers:
-              # copy the event handler for the subclass if it's not already there
-              event_handlers[cls] = event_handlers[base]
-            if not (key_function_exists and base in handler_keys):
-              continue
-            if cls not in handler_keys:
-              # copy the keys for the subclass if it's not already there
-              handler_keys[cls] = dict(base_handler_keys[base])
-              continue
-            keys = handler_keys[cls]
-            for k, v in base_handler_keys[base].items():
-              # keys of the highest in mro will take priority over lower
-              if k not in keys:
-                # different keys may have different handler priorities because of
-                # different event types, so there may be different event handlers
-                keys[k] = v
+          handler = _EventHandler(system, callback, name, priority)
+        event_handlers[event_type] = handler
+        binding_keys = binding.keys
+        if binding_keys:
+          base_handler_keys[event_type] = fromkeys(binding_keys, handler)
+        events.append(EventHandlerAdded(handler, event_type, binding_keys))
+      # Subclasses of bound event types may also trigger the event handler,
+      # and will inherit their binding (keys and priority).
+      # In the rare case that a class is the subclass of multiple bound
+      # event types, the subclass will try to inherit the bindings of all,
+      # but the first bound type in its MRO will take precedence
+      # for shared keys (or when the subclass is keyless).
+      # A bound event type may be the subclass of other bound event types.
+      for cls in {
+        cls
+        for event_type in bindings
+        for cls in subclasses(event_type)
+        if cls in all_handlers or cls in all_key_handlers
+      }:
+        for base in cls.__mro__:
+          if base in bindings:
+            event_handlers[cls] = event_handlers[base]
+            break
+        else:
+          raise RuntimeError
+      handler_keys = {}
+      key_event_types = event_handlers.keys() & all_key_handlers
+      key_event_types |= {cls for event_type in bindings if key_functions.exists(cls)}
+      for cls in key_event_types:
+        inherit_handler_keys = [
+          base_handler_keys[base] for base in cls.__mro__
+          if base in bindings and base in base_handler_keys
+        ]
+        try:
+          handler_keys[cls] = dict(inherit_handler_keys.pop(0))
+        except IndexError:
+          continue
+        keys_setdefault = handler_keys[cls].setdefault
+        for h_keys in inherit_handler_keys:
+          for key, handler in h_keys.items():
+            keys_setdefault(key, handler)
 
       for event_type, handler in event_handlers.items():
-        try:
-          handlers = all_handlers[event_type]
-        except KeyError:
-          if event_type not in bindings:
-            continue
-          handlers = self._lazy_bind(event_type)
-        if not key_functions.exists(event_type):
-          insert_handler(handlers, handler)  # type: ignore
+        if event_type not in key_event_types:
+          insert_handler(
+            self._lazy_bind(event_type) if event_type in bindings
+            else all_handlers[event_type],
+            handler
+          )
           continue
-        keys = handler_keys.get(event_type, ())
+        key_handlers = (
+          all_key_handlers[event_type] if event_type in bindings
+          else self._lazy_key_bind(event_type)
+        )
+        keys = handler_keys.get(event_type, {})
         if not keys:
-          for subhandlers in handlers.values():  # type: ignore
+          for subhandlers in key_handlers.values():
             insert_handler(subhandlers, handler)
           continue
         for key, subhandler in keys.items():
-          if key in handlers:
-            insert_handler(handlers[key], subhandler)  # type: ignore
+          if key in key_handlers:
+            insert_handler(key_handlers[key], subhandler)
           else:
-            subhandlers = list(handlers[NoKey])  # type: ignore
-            handlers[key] = subhandlers  # type: ignore
+            subhandlers = list(key_handlers[NoKey])
+            key_handlers[key] = subhandlers
             insert_handler(subhandlers, subhandler)
     return events
 
@@ -454,7 +463,8 @@ class SystemManager:
     all_handlers = self._handlers
     all_key_handlers = self._key_handlers
     nokey_handlers = [
-      handler for ev_t in event_type.__mro__ if ev_t in all_handlers
+      handler
+      for ev_t in event_type.__mro__ if ev_t in all_handlers
       for handler in all_handlers[ev_t]
     ]
     inherit_key_handlers = [
