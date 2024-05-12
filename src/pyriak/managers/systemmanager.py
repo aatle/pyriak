@@ -397,17 +397,15 @@ class SystemManager:
       key_event_types |= {cls for event_type in bindings if key_functions.exists(cls)}
       for cls in key_event_types:
         inherit_handler_keys = [
-          base_handler_keys[base] for base in cls.__mro__
+          item
+          for base in cls.__mro__
           if base in bindings and base in base_handler_keys
+          for item in base_handler_keys[base].items()
         ]
-        try:
-          handler_keys[cls] = dict(inherit_handler_keys.pop(0))
-        except IndexError:
-          continue
+        handler_keys[cls] = {}
         keys_setdefault = handler_keys[cls].setdefault
-        for h_keys in inherit_handler_keys:
-          for key, handler in h_keys.items():
-            keys_setdefault(key, handler)
+        for key, handler in inherit_handler_keys:
+          keys_setdefault(key, handler)
 
       for event_type, handler in event_handlers.items():
         if event_type not in key_event_types:
@@ -462,36 +460,36 @@ class SystemManager:
   ) -> dict[Hashable | NoKeyType, list[_EventHandler]]:
     all_handlers = self._handlers
     all_key_handlers = self._key_handlers
+    inherit_key_handlers = [
+      item
+      for ev_t in event_type.__mro__
+      if ev_t in all_key_handlers
+      for item in all_key_handlers[ev_t].items()
+    ]
     nokey_handlers = [
       handler
       for ev_t in event_type.__mro__ if ev_t in all_handlers
       for handler in all_handlers[ev_t]
     ]
-    inherit_key_handlers = [
-      all_key_handlers[ev_t] for ev_t in event_type.__mro__
-      if ev_t in all_key_handlers
-    ]
-    event_handlers: dict[Hashable | NoKeyType, list[_EventHandler]] = {NoKey: []}
+    key_handlers: dict[Hashable | NoKeyType, list[_EventHandler]] = {
+      NoKey: nokey_handlers
+    }
     if not inherit_key_handlers:
       if nokey_handlers:
-        event_handlers[NoKey] = self._sort_handlers(nokey_handlers)
-      all_key_handlers[event_type] = event_handlers
-      return event_handlers
-    for key_handlers in inherit_key_handlers:
-      for key, handlers in key_handlers.items():
-        if key in event_handlers:
-          if key is NoKey:
-            nokey_handlers += handlers
-            continue
-          event_handlers[key] += handlers
-        else:
-          event_handlers[key] = list(handlers)
+        nokey_handlers[:] = self._sort_handlers(nokey_handlers)
+      all_key_handlers[event_type] = key_handlers
+      return key_handlers
+    for key, handlers in inherit_key_handlers:
+      if key in key_handlers:
+        key_handlers[key] += handlers
+      else:
+        key_handlers[key] = list(handlers)
     sort_handlers = self._sort_handlers
-    event_handlers = {
-      k: sort_handlers(v + nokey_handlers) for k, v in event_handlers.items()
+    key_handlers = {
+      k: sort_handlers(nokey_handlers + v) for k, v in key_handlers.items()
     }
-    all_key_handlers[event_type] = event_handlers
-    return event_handlers
+    all_key_handlers[event_type] = key_handlers
+    return key_handlers
 
   def _unbind(self, system: System, /) -> list[EventHandlerRemoved]:
     """Remove all handlers that belong to system from self.
