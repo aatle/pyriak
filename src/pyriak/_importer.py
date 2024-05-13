@@ -93,7 +93,7 @@ class _SystemFinder:
         return None
       loader = getattr(spec, 'loader', None)
       if loader is not None:
-        spec.loader = self.wrapper(loader)  # type: ignore
+        spec.loader = self.wrapper(loader)
       return spec
     finally:
       lock_names.remove(fullname)

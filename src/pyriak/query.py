@@ -105,7 +105,7 @@ class QueryResult(ABC):
   def __call__(self) -> Iterator[Any]: ...
   @overload
   def __call__(self, *component_types: type[_T]) -> Iterator[_T]: ...
-  def __call__(self, *component_types):  # type: ignore
+  def __call__(self, *component_types):
     if not component_types:
       component_types = self.types
     return (comp for ent in self.entities for comp in ent(*component_types))
@@ -126,7 +126,7 @@ class QueryResult(ABC):
     self, component_type: type[_T], /
   ) -> Iterator[_T] | tuple[Iterator[Any], Iterator[_T]]: ...
   @abstractmethod
-  def __getitem__(self, key, /):  # type: ignore
+  def __getitem__(self, key, /):
     ...
 
   #= get method?

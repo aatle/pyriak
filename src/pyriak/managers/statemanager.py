@@ -90,7 +90,7 @@ class StateManager:
     states = self._states
     for cls in subclasses(state_type):
       if cls in states:
-        return states[cls]  # type: ignore
+        return states[cls]
     return default
 
   @overload

@@ -104,7 +104,7 @@ class Entity:
     components = self._components
     for cls in subclasses(component_type):
       if cls in components:
-        return components[cls]  # type: ignore
+        return components[cls]
     return default
 
   @overload

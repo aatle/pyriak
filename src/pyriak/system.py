@@ -79,14 +79,14 @@ def bind(
       raise ValueError('NoKey cannot be a key')
   def decorator(callback: _Callback[_T, _R], /) -> _Callback[_T, _R]:
     if not isinstance(callback, _BindingWrapper):
-      return _BindingWrapper(callback, {event_type: _Binding(priority, keys)})  # type: ignore
+      return _BindingWrapper(callback, {event_type: _Binding(priority, keys)})
     bindings = callback._bindings_
     if event_type in bindings:
       raise ValueError(
         f'{event_type!r} is already bound to system event handler {callback._callback_!r}'
       )
     bindings[event_type] = _Binding(priority, keys)
-    return callback  # type: ignore
+    return callback
   return decorator
 
 

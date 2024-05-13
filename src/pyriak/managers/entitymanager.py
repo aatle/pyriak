@@ -85,7 +85,7 @@ class EntityManager:
   def add(self, *entities: Entity) -> None:
     component_types = self._component_types
     self_entities = self._entities
-    self_weakref: weakref[EntityManager] = weakref(self)  # type: ignore
+    self_weakref: weakref[EntityManager] = weakref(self)
     event_queue = self.event_queue
     for entity in entities:
       entity_id = entity.id
@@ -252,7 +252,7 @@ class EntityManager:
   def ids(self, /) -> KeysView[EntityId]: ...
   @overload
   def ids(self, component_type: type, /) -> set[EntityId]: ...
-  def ids(self, component_type=None, /):  # type: ignore
+  def ids(self, component_type=None, /):
     """Return a set of all entity ids that contain the given component type.
 
     If no component type is given, then

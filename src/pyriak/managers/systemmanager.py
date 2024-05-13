@@ -507,24 +507,24 @@ class SystemManager:
           except KeyError:
             continue
           if not key_functions.exists(event_type):
-            for handler in handlers[:]:  # type: ignore
+            for handler in handlers[:]:
               if handler.system is system:
-                handlers.remove(handler)  # type: ignore
+                handlers.remove(handler)
             if not handlers:
               del all_handlers[event_type]
             continue
           remove_event_type = True
-          for key, subhandlers in handlers.items():  # type: ignore
+          for key, subhandlers in handlers.items():
             for handler in subhandlers[:]:
               if handler.system is system:
                 subhandlers.remove(handler)
             if subhandlers:
               remove_event_type = False
             elif key is not NoKey:
-              del handlers[key]  # type: ignore
+              del handlers[key]
           if remove_event_type:
             del all_handlers[event_type]
         # a given bound event type for a handler
         # will always have identical EventHandler objects
-        events.append(EventHandlerRemoved(handler, cls, binding.keys))  # type: ignore
+        events.append(EventHandlerRemoved(handler, cls, binding.keys))
     return events
