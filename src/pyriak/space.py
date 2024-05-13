@@ -11,6 +11,8 @@ from pyriak.query import ComponentQueryResult, EntityQueryResult, IdQueryResult,
 class Space:
   __slots__ = 'systems', 'entities', 'states', '_event_queue', '__weakref__'
 
+  _event_queue: EventQueue
+
   def __init__(
     self, *,
     systems: managers.SystemManager | None = None,
