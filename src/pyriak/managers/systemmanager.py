@@ -20,9 +20,6 @@ if TYPE_CHECKING:
   from pyriak import Space
 
 
-# event subhandler dict type alias
-
-
 class _EventHandler(NamedTuple):
   """Object that holds the info for a single event handler callback in a SystemManager.
 
@@ -421,16 +418,16 @@ class SystemManager:
         )
         keys = handler_keys.get(event_type, {})
         if not keys:
-          for subhandlers in key_handlers.values():
-            insert_handler(subhandlers, handler)
+          for handlers in key_handlers.values():
+            insert_handler(handlers, handler)
           continue
-        for key, subhandler in keys.items():
+        for key, handler in keys.items():
           if key in key_handlers:
-            insert_handler(key_handlers[key], subhandler)
+            insert_handler(key_handlers[key], handler)
           else:
-            subhandlers = list(key_handlers[NoKey])
-            key_handlers[key] = subhandlers
-            insert_handler(subhandlers, subhandler)
+            handlers = list(key_handlers[NoKey])
+            key_handlers[key] = handlers
+            insert_handler(handlers, handler)
     return events
 
   def _lazy_bind(self, event_type: type, /) -> list[_EventHandler]:
@@ -495,7 +492,7 @@ class SystemManager:
     """Remove all handlers that belong to system from self.
 
     If an event type no longer has any handlers, it is removed.
-    This also applies to keys with subhandlers.
+    This also applies to keys with handlers.
     """
     events: list[EventHandlerRemoved] = []
     all_handlers = self._handlers
@@ -516,11 +513,11 @@ class SystemManager:
             continue
           key_handlers = all_key_handlers[event_type]
           remove_event_type = True
-          for key, subhandlers in key_handlers.items():
-            subhandlers[:] = [
-              subhandler for subhandler in subhandlers if subhandler.system is not system
+          for key, handlers in key_handlers.items():
+            handlers[:] = [
+              handler for handler in handlers if handler.system is not system
             ]
-            if subhandlers:
+            if handlers:
               remove_event_type = False
             elif key is not NoKey:
               del key_handlers[key]
