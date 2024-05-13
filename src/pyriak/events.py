@@ -26,6 +26,7 @@ from pyriak import (
 if TYPE_CHECKING:
   from pyriak import Entity, Space, System
   from pyriak.managers.systemmanager import _EventHandler
+  from pyriak.system import _Callback
 
 
 _T = TypeVar('_T')
@@ -110,41 +111,33 @@ class SystemRemoved:
     self.system = system
 
 
-def _handler_key(event: '_EventHandlerEvent') -> Iterator[type]:
+def _handler_key(event: 'EventHandlerAdded | EventHandlerRemoved') -> Iterator[type]:
   yield from _subclasses(event.event_type)
 
 @_set_key(_handler_key)
-class _EventHandlerEvent:
+class EventHandlerAdded:
   def __init__(
-    self, handler: '_EventHandler', event_type: type, keys: frozenset[Hashable]
+    self, _handler: '_EventHandler', _event_type: type, _keys: frozenset[Hashable]
   ):
-    self._handler = handler
-    self._event_type = event_type
-    self._keys = keys
-
-  @property
-  def event_type(self):
-    return self._event_type
-
-  @property
-  def callback(self):
-    return self._handler.callback
+    self._handler = _handler
+    self.event_type = _event_type
+    self.keys = _keys
 
   @property
   def system(self):
     return self._handler.system
 
   @property
-  def priority(self):
-    return self._handler.priority
+  def callback(self):
+    return self._handler.callback
 
   @property
   def name(self):
     return self._handler.name
 
   @property
-  def keys(self):
-    return self._keys
+  def priority(self):
+    return self._handler.priority
 
   @property
   def key(self):
@@ -154,11 +147,26 @@ class _EventHandlerEvent:
     [key] = keys
     return key
 
-class EventHandlerAdded(_EventHandlerEvent):
-  pass
+@_set_key(_handler_key)
+class EventHandlerRemoved:
+  def __init__(
+    self, _system: System, _callback: _Callback, _name: str, _priority: Any,
+    _event_type: type, _keys: frozenset[Hashable]
+  ):
+    self.system = _system
+    self.callback = _callback
+    self.name = _name
+    self.priority = _priority
+    self.event_type = _event_type
+    self.keys = _keys
 
-class EventHandlerRemoved(_EventHandlerEvent):
-  pass
+  @property
+  def key(self):
+    keys = self.keys
+    if not keys:
+      return _NoKey
+    [key] = keys
+    return key
 
 
 def _state_type_key(event: 'StateAdded | StateRemoved') -> Iterator[type]:
