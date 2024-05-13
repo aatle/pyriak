@@ -26,7 +26,7 @@ class NoKeyType:
     raise TypeError(f"cannot subclass type '{cls.__name__}'")
 
 
-NoKey = object.__new__(NoKeyType)
+NoKey: NoKeyType = object.__new__(NoKeyType)
 
 
 # if return value is NoKey, then no key, else if it is iterator (especially generator),
