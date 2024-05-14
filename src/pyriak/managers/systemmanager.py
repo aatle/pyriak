@@ -484,28 +484,25 @@ class SystemManager:
     for name, event_types in system._bindings_.items():
       for cls, binding in event_types.items():
         for event_type in subclasses(cls):
+          try:
+            handlers = all_handlers[event_type]
+          except KeyError:
+            continue
+          handlers[:] = [
+            handler for handler in handlers if handler.system is not system
+          ]
+          if not handlers:
+            del all_handlers[event_type]
           if event_type not in all_key_handlers:
-            try:
-              handlers = all_handlers[event_type]
-            except KeyError:
-              continue
-            handlers[:] = [
-              handler for handler in handlers if handler.system is not system
-            ]
-            if not handlers:
-              del all_handlers[event_type]
             continue
           key_handlers = all_key_handlers[event_type]
-          remove_event_type = True
           for key, handlers in key_handlers.items():
             handlers[:] = [
               handler for handler in handlers if handler.system is not system
             ]
-            if handlers:
-              remove_event_type = False
-            elif key is not NoKey:
+            if not handlers:
               del key_handlers[key]
-          if remove_event_type:
+          if not key_handlers:
             del all_key_handlers[event_type]
         events.append(EventHandlerRemoved(
           system, getattr(system, name), name, binding.priority, cls, binding.keys
