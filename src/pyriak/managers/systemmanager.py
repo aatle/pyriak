@@ -291,28 +291,28 @@ class SystemManager:
   def _get_handlers(self, event: object, /) -> list[_EventHandler]:
     event_type = type(event)
     try:
-      return self._handlers[event_type]
+      handlers = self._handlers[event_type]
     except KeyError:
-      try:
-        handlers = self._key_handlers[event_type]
-      except KeyError:
-        try:
-          key_function = key_functions(event_type)
-        except KeyError:
-          return self._lazy_bind(event_type)
-    handlers = self._lazy_key_bind(event_type)
-    key = key_function(event)
+      handlers = self._lazy_bind(event_type)
+      if not key_functions.exists(event_type):
+        return handlers
+      key_handlers = self._lazy_key_bind(event_type)
+    else:
+      if event_type not in self._key_handlers:
+        return handlers
+      key_handlers = self._key_handlers[event_type]
+    key = key_functions(event_type)(event)
     if not isinstance(key, Iterator):
       try:
-        return handlers[key]
+        return key_handlers[key]
       except KeyError:
-        return handlers[NoKey]
-    keys = {k for k in key if k in handlers}
-    if not keys:
-      return handlers[NoKey]
-    if len(keys) == 1:
-      return handlers[keys.pop()]
-    return self._sort_handlers(handler for key in keys for handler in handlers[key])
+        return handlers
+    keys = {k for k in key if k in key_handlers}
+    if len(keys) > 1:
+      return self._sort_handlers(handler for key in keys for handler in key_handlers[key])
+    if keys:
+      return key_handlers[keys.pop()]
+    return handlers
 
   def _bind(self, system: System, /) -> list[EventHandlerAdded]:
     """Bind a system's handlers so that they can process events.
