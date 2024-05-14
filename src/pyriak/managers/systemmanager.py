@@ -460,17 +460,15 @@ class SystemManager:
     ]
     key_handlers: dict[Hashable, list[_EventHandler]] = {}
     if inherit_key_handlers:
+      base_handlers = self._handlers[event_type]
       for key, handlers in inherit_key_handlers:
         if key in key_handlers:
           key_handlers[key] += handlers
         else:
-          key_handlers[key] = handlers[:]
-      base_handlers = self._handlers[event_type]
+          key_handlers[key] = base_handlers[:] + handlers
       sort_handlers = self._sort_handlers
-      key_handlers = {
-        key: sort_handlers(base_handlers + handlers)
-        for key, handlers in key_handlers.items()
-      }
+      for handlers in key_handlers.values():
+        handlers[:] = sort_handlers(handlers)
     all_key_handlers[event_type] = key_handlers
     return key_handlers
 
