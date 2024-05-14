@@ -327,7 +327,7 @@ class SystemManager:
       raise TypeError(f'{system!r} is not a System')
     if not system._bindings_:
       return []
-    events: list[EventHandlerAdded] = []
+    handler_events: list[EventHandlerAdded] = []
     all_handlers = self._handlers
     all_key_handlers = self._key_handlers
     insert_handler = self._insert_handler
@@ -338,11 +338,10 @@ class SystemManager:
         # the common case of only one event type for a handler (single @bind())
         [(event_type, binding)] = bindings.items()
         handler = _EventHandler(system, callback, name, binding.priority)
-        event_subclasses = set(subclasses(event_type))
-        key_event_types = event_subclasses & all_key_handlers.keys()
-        event_handlers = fromkeys(
-          (event_subclasses & all_handlers.keys()) | key_event_types, handler
-        )
+        event_handlers = {
+          cls: handler for cls in subclasses(event_type) if cls in all_handlers
+        }
+        key_event_types = event_handlers.keys() & all_key_handlers
         event_handlers[event_type] = handler
         if key_functions.exists(event_type):
           key_event_types.add(event_type)
@@ -351,84 +350,85 @@ class SystemManager:
           fromkeys(key_event_types, fromkeys(binding_keys, handler))
           if binding_keys else {}
         )
-        events.append(EventHandlerAdded(handler, event_type, binding_keys))
-        continue
-      event_handlers = {}
-      base_handler_keys: dict[type, dict[Hashable, _EventHandler]] = {}
-      for event_type, binding in bindings.items():
-        priority = binding.priority
-        for other_handler in event_handlers.values():
-          if priority is other_handler.priority:
-            # saves memory: duplicate handler for different event types that have same
-            # priority, is likely because multibinding is usually for similar classes
-            handler = other_handler
-            break
-        else:
-          handler = _EventHandler(system, callback, name, priority)
-        event_handlers[event_type] = handler
-        binding_keys = binding.keys
-        if binding_keys:
-          base_handler_keys[event_type] = fromkeys(binding_keys, handler)
-        events.append(EventHandlerAdded(handler, event_type, binding_keys))
-      # Subclasses of bound event types may also trigger the event handler,
-      # and will inherit their binding (keys and priority).
-      # In the rare case that a class is the subclass of multiple bound
-      # event types, the subclass will try to inherit the bindings of all,
-      # but the first bound type in its MRO will take precedence
-      # for shared keys (or when the subclass is keyless).
-      # A bound event type may be the subclass of other bound event types.
-      for cls in {
-        cls
-        for event_type in bindings
-        for cls in subclasses(event_type)
-        if cls in all_handlers or cls in all_key_handlers
-      }:
-        for base in cls.__mro__:
-          if base in bindings:
-            event_handlers[cls] = event_handlers[base]
-            break
-        else:
-          raise RuntimeError
-      handler_keys = {}
-      key_event_types = event_handlers.keys() & all_key_handlers
-      key_event_types |= {cls for event_type in bindings if key_functions.exists(cls)}
-      for cls in key_event_types:
-        inherit_handler_keys = [
-          item
-          for base in cls.__mro__
-          if base in bindings and base in base_handler_keys
-          for item in base_handler_keys[base].items()
-        ]
-        handler_keys[cls] = {}
-        keys_setdefault = handler_keys[cls].setdefault
-        for key, handler in inherit_handler_keys:
-          keys_setdefault(key, handler)
+        handler_events.append(EventHandlerAdded(handler, event_type, binding_keys))
+      else:
+        event_handlers = {}
+        base_handler_keys: dict[type, dict[Hashable, _EventHandler]] = {}
+        cached_handlers: dict[int, _EventHandler] = {}
+        for event_type, binding in bindings.items():
+          priority = binding.priority
+          priority_id = id(priority)
+          if priority_id in cached_handlers:
+            handler = cached_handlers[priority_id]
+          else:
+            handler = cached_handlers[priority_id] = _EventHandler(
+              system, callback, name, priority
+            )
+          binding_keys = binding.keys
+          if binding_keys:
+            base_handler_keys[event_type] = fromkeys(binding_keys, handler)
+          handler_events.append(EventHandlerAdded(handler, event_type, binding_keys))
+        del cached_handlers
+        # Subclasses of bound event types may also trigger the event handler,
+        # and will inherit their binding (keys and priority).
+        # In the rare case that a class is the subclass of multiple bound
+        # event types, the subclass will try to inherit the bindings of all,
+        # but the first bound type in its MRO will take precedence
+        # for shared keys (or when the subclass is keyless).
+        # A bound event type may be the subclass of other bound event types.
+        for cls in {
+          cls
+          for event_type in bindings
+          for cls in subclasses(event_type)
+          if cls in all_handlers
+        }:
+          for base in cls.__mro__:
+            if base in bindings:
+              event_handlers[cls] = event_handlers[base]
+              break
+          else:
+            raise RuntimeError
+        handler_keys = {}
+        key_event_types = event_handlers.keys() & all_key_handlers
+        key_event_types |= {cls for event_type in bindings if key_functions.exists(cls)}
+        for cls in key_event_types:
+          inherit_items = [
+            item
+            for base in cls.__mro__
+            if base in bindings and base in base_handler_keys
+            for item in base_handler_keys[base].items()
+          ]
+          # The first bases in the MRO should have their key object: handler pairs
+          # take precedence. In a dict, the first keys put in are kept, and the
+          # last values put in are kept. So, this accounts for that.
+          inherit_handler_keys = dict(reversed(inherit_items))
+          handler_keys[cls] = {
+            (k:=item[0]): inherit_handler_keys[k] for item in inherit_items
+          }
 
       for event_type, handler in event_handlers.items():
+        handlers = (
+          all_handlers[event_type] if event_type in all_handlers
+          else self._lazy_bind(event_type)
+        )
         if event_type not in key_event_types:
-          insert_handler(
-            self._lazy_bind(event_type) if event_type in bindings
-            else all_handlers[event_type],
-            handler
-          )
+          insert_handler(handlers, handler)
           continue
         key_handlers = (
-          all_key_handlers[event_type] if event_type in bindings
+          all_key_handlers[event_type] if event_type in all_key_handlers
           else self._lazy_key_bind(event_type)
         )
         keys = handler_keys.get(event_type, {})
         if not keys:
+          insert_handler(handlers, handler)
           for handlers in key_handlers.values():
             insert_handler(handlers, handler)
           continue
         for key, handler in keys.items():
-          if key in key_handlers:
-            insert_handler(key_handlers[key], handler)
-          else:
-            handlers = list(key_handlers[NoKey])
-            key_handlers[key] = handlers
-            insert_handler(handlers, handler)
-    return events
+          if key not in key_handlers:
+            key_handlers[key] = handlers[:]
+          insert_handler(key_handlers[key], handler)
+    return handler_events
 
   def _lazy_bind(self, event_type: type, /) -> list[_EventHandler]:
     """Find bindings for event_type and bind them and return the handlers.
