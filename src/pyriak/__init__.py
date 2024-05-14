@@ -10,8 +10,6 @@ __all__ = [
   'subclasses',
   'key_functions',
   'set_key',
-  'NoKey',
-  'NoKeyType',
   'tagclass',
   'dead_weakref',
 ]
@@ -133,7 +131,7 @@ _SENTINEL = _Sentinel.SENTINEL
 # circular imports
 from pyriak import _importer  # noqa: E402
 from pyriak.entity import Entity, EntityId  # noqa: E402
-from pyriak.eventkey import NoKey, NoKeyType, key_functions, set_key  # noqa: E402
+from pyriak.eventkey import key_functions, set_key  # noqa: E402
 from pyriak.query import Query  # noqa: E402
 from pyriak.space import Space  # noqa: E402
 from pyriak.system import System, bind  # noqa: E402
