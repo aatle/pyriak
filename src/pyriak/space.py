@@ -44,7 +44,8 @@ class Space:
 
   @event_queue.setter
   def event_queue(self, value: EventQueue):
-    self._event_queue = self.entities.event_queue = self.states.event_queue = value
+    self._event_queue = value
+    self.systems.event_queue = self.entities.event_queue = self.states.event_queue = value
 
   @overload
   def query(self, query: Query, /) -> ComponentQueryResult: ...

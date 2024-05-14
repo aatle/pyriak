@@ -63,7 +63,7 @@ del NamedTuple
 
 class SystemManager:
   __slots__ = (
-    '_space', '_systems', '_handlers', '_key_handlers', '_event_queue', '__weakref__'
+    '_space', '_systems', '_handlers', '_key_handlers', 'event_queue', '__weakref__'
   )
 
   def __init__(
@@ -74,7 +74,7 @@ class SystemManager:
     event_queue: EventQueue | None = None
   ):
     self.space = space
-    self._event_queue = event_queue
+    self.event_queue = event_queue
     # values aren't used: dict is for insertion order
     self._systems: dict[System, None] = {}
     self._handlers: dict[type, list[_EventHandler]] = {}
@@ -211,19 +211,6 @@ class SystemManager:
   @space.setter
   def space(self, value: 'Space | None'):
     self._space = dead_weakref if value is None else weakref(value)
-
-  @property
-  def event_queue(self) -> EventQueue | None:
-    event_queue = self._event_queue
-    if event_queue is None:
-      space = self.space
-      if space is not None:
-        return space.event_queue
-    return event_queue
-
-  @event_queue.setter
-  def event_queue(self, value: EventQueue | None):
-    self._event_queue = value
 
   @staticmethod
   def _insert_handler(list: list[_EventHandler], handler: _EventHandler, /) -> None:
