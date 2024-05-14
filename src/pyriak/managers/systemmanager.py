@@ -212,10 +212,6 @@ class SystemManager:
   def space(self, value: 'Space | None'):
     self._space = dead_weakref if value is None else weakref(value)
 
-  @space.deleter
-  def space(self):
-    self._space = dead_weakref
-
   @property
   def event_queue(self) -> EventQueue | None:
     event_queue = self._event_queue
@@ -228,10 +224,6 @@ class SystemManager:
   @event_queue.setter
   def event_queue(self, value: EventQueue | None):
     self._event_queue = value
-
-  @event_queue.deleter
-  def event_queue(self):
-    del self._event_queue
 
   @staticmethod
   def _insert_handler(list: list[_EventHandler], handler: _EventHandler, /) -> None:
