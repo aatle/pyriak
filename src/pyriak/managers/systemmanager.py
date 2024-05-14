@@ -4,7 +4,7 @@ from collections.abc import Hashable, Iterable, Iterator
 from typing import TYPE_CHECKING, Any, NamedTuple
 from weakref import ref as weakref
 
-from pyriak import EventQueue, NoKey, NoKeyType, dead_weakref, key_functions, subclasses
+from pyriak import EventQueue, dead_weakref, key_functions, subclasses
 from pyriak.events import (
   EventHandlerAdded,
   EventHandlerRemoved,
@@ -78,7 +78,7 @@ class SystemManager:
     # values aren't used: dict is for insertion order
     self._systems: dict[System, None] = {}
     self._handlers: dict[type, list[_EventHandler]] = {}
-    self._key_handlers: dict[type, dict[Hashable | NoKeyType, list[_EventHandler]]] = {}
+    self._key_handlers: dict[type, dict[Hashable, list[_EventHandler]]] = {}
     self.add(*systems)
 
   def process(self, event: object, space: 'Space | None' = None) -> bool:
@@ -437,15 +437,11 @@ class SystemManager:
     These subclasses are only bound when a subclass is processed. Hence, lazy binding.
     """
     all_handlers = self._handlers
-    all_key_handlers = self._key_handlers
     event_handlers = [
       handler
       for ev_t in event_type.__mro__
-      for handler in (
-        all_handlers[ev_t] if ev_t in all_handlers
-        else all_key_handlers[ev_t][NoKey] if ev_t in all_key_handlers
-        else ()
-      )
+      if ev_t in all_handlers
+      for handler in all_handlers[ev_t]
     ]
     if event_handlers:
       event_handlers = self._sort_handlers(event_handlers)
@@ -454,8 +450,7 @@ class SystemManager:
 
   def _lazy_key_bind(
     self, event_type: type, /
-  ) -> dict[Hashable | NoKeyType, list[_EventHandler]]:
-    all_handlers = self._handlers
+  ) -> dict[Hashable, list[_EventHandler]]:
     all_key_handlers = self._key_handlers
     inherit_key_handlers = [
       item
@@ -463,28 +458,19 @@ class SystemManager:
       if ev_t in all_key_handlers
       for item in all_key_handlers[ev_t].items()
     ]
-    nokey_handlers = [
-      handler
-      for ev_t in event_type.__mro__ if ev_t in all_handlers
-      for handler in all_handlers[ev_t]
-    ]
-    key_handlers: dict[Hashable | NoKeyType, list[_EventHandler]] = {
-      NoKey: nokey_handlers
-    }
-    if not inherit_key_handlers:
-      if nokey_handlers:
-        nokey_handlers[:] = self._sort_handlers(nokey_handlers)
-      all_key_handlers[event_type] = key_handlers
-      return key_handlers
-    for key, handlers in inherit_key_handlers:
-      if key in key_handlers:
-        key_handlers[key] += handlers
-      else:
-        key_handlers[key] = list(handlers)
-    sort_handlers = self._sort_handlers
-    key_handlers = {
-      k: sort_handlers(nokey_handlers + v) for k, v in key_handlers.items()
-    }
+    key_handlers: dict[Hashable, list[_EventHandler]] = {}
+    if inherit_key_handlers:
+      for key, handlers in inherit_key_handlers:
+        if key in key_handlers:
+          key_handlers[key] += handlers
+        else:
+          key_handlers[key] = handlers[:]
+      base_handlers = self._handlers[event_type]
+      sort_handlers = self._sort_handlers
+      key_handlers = {
+        key: sort_handlers(base_handlers + handlers)
+        for key, handlers in key_handlers.items()
+      }
     all_key_handlers[event_type] = key_handlers
     return key_handlers
 
