@@ -17,7 +17,6 @@ from collections.abc import Callable, Hashable, Iterator
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from pyriak import (
-  NoKey as _NoKey,
   set_key as _set_key,
   subclasses as _subclasses,
 )
@@ -141,10 +140,7 @@ class EventHandlerAdded:
 
   @property
   def key(self):
-    keys = self.keys
-    if not keys:
-      return _NoKey
-    [key] = keys
+    [key] = self.keys
     return key
 
 @_set_key(_handler_key)
@@ -162,10 +158,7 @@ class EventHandlerRemoved:
 
   @property
   def key(self):
-    keys = self.keys
-    if not keys:
-      return _NoKey
-    [key] = keys
+    [key] = self.keys
     return key
 
 
