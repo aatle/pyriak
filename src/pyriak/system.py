@@ -4,7 +4,7 @@ from collections.abc import Callable, Hashable, Iterable
 from types import MappingProxyType, ModuleType
 from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar, overload
 
-from pyriak import NoKey, NoKeyType, key_functions
+from pyriak import _SENTINEL, key_functions
 
 
 if TYPE_CHECKING:
@@ -45,15 +45,13 @@ class _BindingWrapper:
 
 @overload
 def bind(
-  event_type: type[_T], priority: Any, /, *, key: Hashable | NoKeyType = NoKey
+  event_type: type[_T], priority: Any, /, *, key: Hashable
 ) -> Callable[[_Callback[_T, _R]], _Callback[_T, _R]]: ...
 @overload
 def bind(
-  event_type: type[_T], priority: Any, /, *, keys: Iterable[Hashable] = ()
+  event_type: type[_T], priority: Any, /, *, keys: Iterable[Hashable]
 ) -> Callable[[_Callback[_T, _R]], _Callback[_T, _R]]: ...
-def bind(
-  event_type: type[_T], priority: Any, /, *, key: Hashable | NoKeyType = NoKey, keys=()
-) -> Callable[[_Callback[_T, _R]], _Callback[_T, _R]]:
+def bind(event_type, priority, /, *, key=_SENTINEL, keys=_SENTINEL):
   """Bind a callback to an event type.
 
 
@@ -64,19 +62,16 @@ def bind(
     hash(event_type)
   except TypeError:
     raise TypeError(f'{event_type!r} is not hashable') from None
-  if key is not NoKey:
-    if keys != ():
+  if key is not _SENTINEL:
+    if keys is not _SENTINEL:
       raise TypeError("bind() cannot be passed both 'key' and 'keys' kwargs")
     keys = frozenset([key])
   else:
-    keys = frozenset(keys)
-  if keys:
-    if not key_functions.exists(event_type):
-      raise ValueError(
-        f'bind(): keys were provided but no key function exists for {event_type!r}'
-      )
-    if NoKey in keys:
-      raise ValueError('NoKey cannot be a key')
+    keys = frozenset(keys) if keys is not _SENTINEL else frozenset()
+  if keys and not key_functions.exists(event_type):
+    raise ValueError(
+      f'bind(): keys were provided but no key function exists for {event_type!r}'
+    )
   def decorator(callback: _Callback[_T, _R], /) -> _Callback[_T, _R]:
     if not isinstance(callback, _BindingWrapper):
       return _BindingWrapper(callback, {event_type: _Binding(priority, keys)})
