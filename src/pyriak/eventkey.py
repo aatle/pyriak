@@ -1,4 +1,4 @@
-__all__ = ['key_functions', 'set_key', 'NoKey', 'NoKeyType', 'KeyFunction']
+__all__ = ['key_functions', 'set_key', 'KeyFunction']
 
 from collections.abc import Callable, Hashable, Iterator, Mapping
 from typing import Any, TypeAlias, TypeVar, overload
@@ -13,25 +13,9 @@ _D = TypeVar('_D')
 del TypeVar
 
 
-class NoKeyType:
-  __slots__ = ()
-
-  def __new__(cls, /):
-    return NoKey
-
-  def __repr__(self, /):
-    return 'NoKey'
-
-  def __init_subclass__(cls, /, **kwargs):
-    raise TypeError(f"cannot subclass type '{cls.__name__}'")
-
-
-NoKey: NoKeyType = object.__new__(NoKeyType)
-
-
-# if return value is NoKey, then no key, else if it is iterator (especially generator),
-# it is multiple hashable keys, else it is the key itself (must be hashable)
-KeyFunction: TypeAlias = Callable[[_T], Hashable | Iterator[Hashable] | NoKeyType]
+# if it is iterator (especially generator), it is multiple
+# hashable keys, else it is the key itself (must be hashable)
+KeyFunction: TypeAlias = Callable[[_T], Hashable | Iterator[Hashable]]
 
 
 class EventKeyFunctions:
@@ -84,8 +68,6 @@ class EventKeyFunctions:
     data = self._data
     if event_type in data:
       raise KeyError(f'cannot reassign event type key: {event_type!r}')
-    if key is NoKey:
-      raise TypeError(f'do not use {NoKey} to denote no key function, use None instead')
     data[event_type] = key
 
   @overload
