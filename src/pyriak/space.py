@@ -9,7 +9,7 @@ from pyriak.query import ComponentQueryResult, EntityQueryResult, IdQueryResult,
 
 
 class Space:
-  __slots__ = 'systems', 'entities', 'states', '_event_queue', '__weakref__'
+  __slots__ = 'systems', 'entities', 'states', 'event_queue', '__weakref__'
 
   _event_queue: EventQueue
 
@@ -27,25 +27,17 @@ class Space:
     if systems is None:
       systems = managers.SystemManager()
       systems.space = self
-    self.systems = systems
     if entities is None:
       entities = managers.EntityManager()
-    self.entities = entities
     if states is None:
       states = managers.StateManager()
-    self.states = states
     if event_queue is None:
       event_queue = deque()
+    self.systems = systems
+    self.entities = entities
+    self.states = states
     self.event_queue = event_queue
-
-  @property
-  def event_queue(self) -> EventQueue:
-    return self._event_queue
-
-  @event_queue.setter
-  def event_queue(self, value: EventQueue):
-    self._event_queue = value
-    self.systems.event_queue = self.entities.event_queue = self.states.event_queue = value
+    systems.event_queue = entities.event_queue = states.event_queue = event_queue
 
   @overload
   def query(self, query: Query, /) -> ComponentQueryResult: ...
