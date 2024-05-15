@@ -26,7 +26,6 @@ class Space:
     """
     if systems is None:
       systems = managers.SystemManager()
-      systems.space = self
     if entities is None:
       entities = managers.EntityManager()
     if states is None:
@@ -34,6 +33,7 @@ class Space:
     if event_queue is None:
       event_queue = deque()
     self.systems = systems
+    systems.space = self
     self.entities = entities
     self.states = states
     self.event_queue = event_queue
