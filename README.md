@@ -158,9 +158,6 @@ Components can be created large and then later broken down into a batch of multi
  
 
 ## TO DO:
-- change SpaceCallback call signature
-- 'take_first' merge function `lambda *sets: sets[0]`
-
 - dynamic handlers?
 - 3.11 typing features
 - fix multibinding typing
@@ -195,8 +192,6 @@ Components can be created large and then later broken down into a batch of multi
 - str and repr methods all
 - place documentation in code, along with all rules (style guide first)
 - optimization through profiling, scalene (in a game)
-- for optimization: consider cython
 - make imported module variables private (consistency)
 - python version lower in poetry dependencies ? find min python version
-- pyright generator issue (overloads)
 - review and rewrite readme.txt
