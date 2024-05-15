@@ -11,7 +11,6 @@ __all__ = [
   'key_functions',
   'set_key',
   'tagclass',
-  'dead_weakref',
 ]
 
 from collections.abc import (
