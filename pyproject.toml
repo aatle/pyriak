@@ -44,7 +44,7 @@ select = [
   "RUF",
   # "FURB",
 ]
-ignore = ["SIM105", "FBT003"]
+ignore = ["SIM105"]
 
 [tool.ruff.lint.isort]
 lines-after-imports = 2
