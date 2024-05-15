@@ -11,6 +11,7 @@ __all__ = [
   'key_functions',
   'set_key',
   'tagclass',
+  'first',
 ]
 
 from collections.abc import (
@@ -119,6 +120,10 @@ def tagclass(*args) -> type:
     raise TypeError('tag() takes at most 3 arguments')
   cls = type(first, bases, namespace)  # required variable so dunder methods know cls
   return cls  # noqa: RET504
+
+
+def first(arg: _T, *args: _Any) -> _T:  # noqa: ARG001
+  return arg
 
 
 class _Sentinel(_Enum):
