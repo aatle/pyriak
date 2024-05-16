@@ -344,6 +344,7 @@ class SystemManager:
             handler = cached_handlers[priority_id] = _EventHandler(
               system, callback, name, priority
             )
+          event_handlers[event_type] = handler
           binding_keys = binding.keys
           if binding_keys:
             base_handler_keys[event_type] = fromkeys(binding_keys, handler)
