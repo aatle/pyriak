@@ -4,11 +4,12 @@ from collections.abc import Callable, Hashable, Iterable
 from types import MappingProxyType, ModuleType
 from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar, overload
 
-from pyriak import _SENTINEL, key_functions
+from pyriak import _SENTINEL
+from pyriak.eventkey import key_functions
 
 
 if TYPE_CHECKING:
-  from pyriak import Space
+  from pyriak.space import Space
 
 
 _T = TypeVar('_T')

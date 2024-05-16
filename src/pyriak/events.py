@@ -16,16 +16,15 @@ __all__ = [
 from collections.abc import Callable, Hashable, Iterator
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
-from pyriak import (
-  set_key as _set_key,
-  subclasses as _subclasses,
-)
+from pyriak import subclasses as _subclasses
+from pyriak.eventkey import set_key as _set_key
 
 
 if TYPE_CHECKING:
-  from pyriak import Entity, Space, System
+  from pyriak.entity import Entity
   from pyriak.managers.systemmanager import _EventHandler
-  from pyriak.system import _Callback
+  from pyriak.space import Space
+  from pyriak.system import System, _Callback
 
 
 _T = TypeVar('_T')

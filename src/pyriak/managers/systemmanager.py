@@ -4,7 +4,8 @@ from collections.abc import Hashable, Iterable, Iterator
 from typing import TYPE_CHECKING, Any, NamedTuple
 from weakref import ref as weakref
 
-from pyriak import EventQueue, dead_weakref, key_functions, subclasses
+from pyriak import EventQueue, dead_weakref, subclasses
+from pyriak.eventkey import key_functions
 from pyriak.events import (
   EventHandlerAdded,
   EventHandlerRemoved,
@@ -17,7 +18,7 @@ from pyriak.system import System, _Callback
 
 
 if TYPE_CHECKING:
-  from pyriak import Space
+  from pyriak.space import Space
 
 
 class _EventHandler(NamedTuple):
