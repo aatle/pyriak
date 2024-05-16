@@ -33,14 +33,14 @@ _T = TypeVar('_T')
 class SpaceCallback(Generic[_T]):
   """A SystemManager automatically calls a SpaceCallback Event when it processes one."""
 
-  # TODO: python 3.11 - callback: Callable[[Space, *_Ts], _T]
+  # TODO: python 3.11 - callback: Callable[['Space', *_Ts], _T]
 
-  def __init__(self, callback: Callable[..., _T], /, *args: Any, **kwargs: Any):
+  def __init__(self, callback: Callable [..., _T], /, *args: Any, **kwargs: Any):
     self.callback = callback
     self.args = list(args)
     self.kwargs = kwargs
 
-  def __call__(self, space: Space, /) -> _T:
+  def __call__(self, space: 'Space', /) -> _T:
     """Execute self's callback with self's args and kwargs."""
     return self.callback(space, *self.args, **self.kwargs)
 
