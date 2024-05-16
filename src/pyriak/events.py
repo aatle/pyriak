@@ -145,7 +145,7 @@ class EventHandlerAdded:
 @_set_key(_handler_key)
 class EventHandlerRemoved:
   def __init__(
-    self, _system: System, _callback: _Callback, _name: str, _priority: Any,
+    self, _system: 'System', _callback: '_Callback', _name: str, _priority: Any,
     _event_type: type, _keys: frozenset[Hashable]
   ):
     self.system = _system
