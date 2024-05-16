@@ -1,6 +1,6 @@
 __all__ = ['SystemManager']
 
-from collections.abc import Hashable, Iterable, Iterator
+from collections.abc import Hashable, Iterable, Iterator, Mapping
 from typing import TYPE_CHECKING, Any, NamedTuple
 from weakref import ref as weakref
 
@@ -326,14 +326,14 @@ class SystemManager:
         if key_functions.exists(event_type):
           key_event_types.add(event_type)
         binding_keys = binding.keys
-        handler_keys = (
+        handler_keys: dict[type, Mapping[Hashable, _EventHandler]] = (
           fromkeys(key_event_types, fromkeys(binding_keys, handler))
           if binding_keys else {}
         )
         handler_events.append(EventHandlerAdded(handler, event_type, binding_keys))
       else:
         event_handlers = {}
-        base_handler_keys: dict[type, dict[Hashable, _EventHandler]] = {}
+        base_handler_keys: dict[type, Mapping[Hashable, _EventHandler]] = {}
         cached_handlers: dict[int, _EventHandler] = {}
         for event_type, binding in bindings.items():
           priority = binding.priority
@@ -373,19 +373,21 @@ class SystemManager:
         key_event_types = event_handlers.keys() & all_key_handlers
         key_event_types |= {cls for event_type in bindings if key_functions.exists(cls)}
         for cls in key_event_types:
-          inherit_items = [
-            item
-            for base in cls.__mro__
-            if base in bindings and base in base_handler_keys
-            for item in base_handler_keys[base].items()
-          ]
-          # The first bases in the MRO should have their key object: handler pairs
-          # take precedence. In a dict, the first keys put in are kept, and the
-          # last values put in are kept. So, this accounts for that.
-          inherit_handler_keys = dict(reversed(inherit_items))
-          handler_keys[cls] = {
-            (k:=item[0]): inherit_handler_keys[k] for item in inherit_items
-          }
+          inherit_handler_keys: dict[Hashable, _EventHandler] = {}
+          total_len = 0
+          for base in reversed(cls.__mro__):
+            if base in base_handler_keys:
+              inherit_base_keys = base_handler_keys[base]
+              inherit_handler_keys.update(inherit_base_keys)
+              total_len += len(inherit_base_keys)
+          if total_len != len(inherit_handler_keys):
+            # When inheriting multiple of the same key,
+            # the key object of the first type in the MRO is kept
+            inherit_handler_keys = {
+              key: inherit_handler_keys[key]
+              for base in cls.__mro__ for key in base_handler_keys.get(base, ())
+            }
+          handler_keys[cls] = inherit_handler_keys
 
       for event_type, handler in event_handlers.items():
         handlers = (
