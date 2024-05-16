@@ -448,7 +448,7 @@ class SystemManager:
         if key in key_handlers:
           key_handlers[key] += handlers
         else:
-          key_handlers[key] = base_handlers[:] + handlers
+          key_handlers[key] = base_handlers + handlers
       sort_handlers = self._sort_handlers
       for handlers in key_handlers.values():
         handlers[:] = sort_handlers(handlers)
