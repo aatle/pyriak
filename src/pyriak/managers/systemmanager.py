@@ -1,6 +1,7 @@
 __all__ = ['SystemManager']
 
 from collections.abc import Hashable, Iterable, Iterator, Mapping
+from itertools import chain
 from typing import TYPE_CHECKING, Any, NamedTuple
 from weakref import ref as weakref
 
@@ -441,17 +442,21 @@ class SystemManager:
       if ev_t in all_key_handlers
       for item in all_key_handlers[ev_t].items()
     ]
-    key_handlers: dict[Hashable, list[_EventHandler]] = {}
     if inherit_key_handlers:
+      unsorted_handlers = {}
       base_handlers = self._handlers[event_type]
       for key, handlers in inherit_key_handlers:
-        if key in key_handlers:
-          key_handlers[key] += handlers
+        if key in unsorted_handlers:
+          unsorted_handlers[key].append(handlers)
         else:
-          key_handlers[key] = base_handlers + handlers
+          unsorted_handlers[key] = [base_handlers, handlers]
       sort_handlers = self._sort_handlers
-      for handlers in key_handlers.values():
-        handlers[:] = sort_handlers(handlers)
+      key_handlers: dict[Hashable, list[_EventHandler]] = {
+        key: sort_handlers(chain.from_iterable(handlers_list))
+        for key, handlers_list in unsorted_handlers.items()
+      }
+    else:
+      key_handlers = {}
     all_key_handlers[event_type] = key_handlers
     return key_handlers
 
