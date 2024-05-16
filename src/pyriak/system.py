@@ -46,6 +46,10 @@ class _BindingWrapper:
 
 @overload
 def bind(
+  event_type: type[_T], priority: Any, /
+) -> Callable[[_Callback[_T, _R]], _Callback[_T, _R]]: ...
+@overload
+def bind(
   event_type: type[_T], priority: Any, /, *, key: Hashable
 ) -> Callable[[_Callback[_T, _R]], _Callback[_T, _R]]: ...
 @overload
