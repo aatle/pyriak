@@ -67,6 +67,8 @@ class SystemManager:
     '_space', '_systems', '_handlers', '_key_handlers', 'event_queue', '__weakref__'
   )
 
+  event_queue: EventQueue | None
+
   def __init__(
     self,
     systems: Iterable[System] = (),
