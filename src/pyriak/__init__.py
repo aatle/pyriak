@@ -8,6 +8,7 @@ __all__ = [
   'EntityId',
   'Query',
   'subclasses',
+  'strict_subclasses',
   'key_functions',
   'set_key',
   'tagclass',
@@ -59,6 +60,18 @@ def subclasses(cls: _TypeT, /) -> _Generator[_TypeT, None, _TypeT]:
   the StopIteration that is raised).
   """
   yield cls
+  get_subclasses = _get_subclasses
+  stack = get_subclasses(cls)
+  pop = stack.pop
+  while stack:
+    subclass = pop()
+    yield subclass
+    stack += get_subclasses(subclass)
+  return cls
+
+
+def strict_subclasses(cls: _TypeT, /) -> _Generator[_TypeT, None, _TypeT]:
+  """Same as subclasses, but does not yield the original class."""
   get_subclasses = _get_subclasses
   stack = get_subclasses(cls)
   pop = stack.pop
