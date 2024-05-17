@@ -373,7 +373,7 @@ class SystemManager:
             raise RuntimeError
         handler_keys = {}
         key_event_types = event_handlers.keys() & all_key_handlers
-        key_event_types |= {cls for event_type in bindings if key_functions.exists(cls)}
+        key_event_types |= {ev_t for ev_t in bindings if key_functions.exists(ev_t)}
         for cls in key_event_types:
           inherit_handler_keys: dict[Hashable, _EventHandler] = {}
           total_len = 0
