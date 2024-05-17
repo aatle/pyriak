@@ -3,7 +3,7 @@ __all__ = ['StateManager']
 from collections.abc import Iterable
 from typing import TypeVar, overload
 
-from pyriak import _SENTINEL, EventQueue, subclasses
+from pyriak import _SENTINEL, EventQueue, strict_subclasses, subclasses
 from pyriak.events import StateAdded, StateRemoved
 
 
@@ -69,11 +69,14 @@ class StateManager:
     ]
 
   def __getitem__(self, state_type: type[_T], /) -> _T:
-    states = self._states
-    for cls in subclasses(state_type):
-      if cls in states:
-        return states[cls]  # type: ignore
-    raise KeyError(state_type)
+    try:
+      return self._states[state_type]  # type: ignore[return-value]
+    except KeyError:
+      states = self._states
+      for cls in strict_subclasses(state_type):
+        if cls in states:
+          return states[cls]  # type: ignore[return-value]
+      raise
 
   def __setitem__(self, state_type: type[_T], state: _T, /):
     self.remove(*self(state_type))
@@ -87,8 +90,12 @@ class StateManager:
   @overload
   def get(self, state_type: type[_T], default: _D, /) -> _T | _D: ...
   def get(self, state_type, default=None, /):
+    try:
+      return self._states[state_type]
+    except KeyError:
+      pass
     states = self._states
-    for cls in subclasses(state_type):
+    for cls in strict_subclasses(state_type):
       if cls in states:
         return states[cls]
     return default
@@ -120,9 +127,11 @@ class StateManager:
     return len(self._states)
 
   def __contains__(self, obj: object, /):
+    if obj in self._states:
+      return True
     if isinstance(obj, type):
       states = self._states
-      for cls in subclasses(obj):
+      for cls in strict_subclasses(obj):
         if cls in states:
           return True
     return False
