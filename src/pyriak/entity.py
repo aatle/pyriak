@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from typing import TYPE_CHECKING, NewType, TypeVar, overload
 from uuid import uuid4
 
-from pyriak import _SENTINEL, dead_weakref, subclasses
+from pyriak import _SENTINEL, dead_weakref, strict_subclasses, subclasses
 from pyriak.events import ComponentAdded, ComponentRemoved
 
 
@@ -83,11 +83,14 @@ class Entity:
     ]
 
   def __getitem__(self, component_type: type[_T], /) -> _T:
-    components = self._components
-    for cls in subclasses(component_type):
-      if cls in components:
-        return components[cls]  # type: ignore
-    raise KeyError(component_type)
+    try:
+      return self._components[component_type]  # type: ignore[return-value]
+    except KeyError:
+      components = self._components
+      for cls in strict_subclasses(component_type):
+        if cls in components:
+          return components[cls]  # type: ignore[return-value]
+      raise
 
   def __setitem__(self, component_type: type[_T], component: _T, /):
     self.remove(*self(component_type))
@@ -101,8 +104,12 @@ class Entity:
   @overload
   def get(self, component_type: type[_T], default: _D, /) -> _T | _D: ...
   def get(self, component_type, default=None, /):
+    try:
+      return self._components[component_type]
+    except KeyError:
+      pass
     components = self._components
-    for cls in subclasses(component_type):
+    for cls in strict_subclasses(component_type):
       if cls in components:
         return components[cls]
     return default
@@ -134,9 +141,11 @@ class Entity:
     return len(self._components)
 
   def __contains__(self, obj: object, /):
+    if obj in self._components:
+      return True
     if isinstance(obj, type):
       components = self._components
-      for cls in subclasses(obj):
+      for cls in strict_subclasses(obj):
         if cls in components:
           return True
     return False
