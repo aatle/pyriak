@@ -8,88 +8,8 @@ A lightweight implementation of Entity Component System architecture for Python.
 
 
 
-
-
-
-
 ## Usage
 
-
-
-
-
-System naming convention:
-Systems are modules. Use snake_case because they are often accessed through attribute notation.
-The name should describe the system's purpose or feature, either managing or controlling something, e.g.:
-display.py controls Display state,
-camera.py controls Camera state
-but if it does not control any data, then it should be describing the action it does or thing it does
-initialize.py
-exit.py
-camera_shake.py
-
-
-More of an 'ECSSE' engine: Entity, Component, System, State, Event
-
-Event processing:
-+- All subclasses of Event are automatically registered in SystemManager binds
-+- System added to SystemManager
-|  +- System type's static binds registered in SystemManager binds, as bound method callbacks
-+- System removed from SystemManager
-|  +- System's binds removed from SystemManager binds
-+- Event triggered by a system: 'source' (source is irrelevant)
-   +- Event directed to a specific 'target'/'receiver'/'recipient'
-   |  +- Bound callback is found for the event type for the system type, and executed
-   |  +- Bound callback is not found: raise TypeError
-   +- Event received by all systems in SystemManager (in order of highest priority to lowest)
-      +- All bound callbacks for that event type are executed
-      +- No callbacks for event type: nothing happens
-      +- Event type not registered in SystemManager binds: raise TypeError, incorrect argument type
-
-
-
-RECOMMENDED DESIGN:
-One of the main goals of this ECS is to reduce coupling of game functionality
-Decoupling game functionality has many benefits.
-
-Let's say we would like our player to kill an enemy, and get loot and an acheivement
-
-The directly relevant systems would be:
-InputSystem
-AudioSystem
-AnimationSystem
-PlayerAttackSystem
-AttackCollisionSystem
-EnemyCollisionSystem
-EnemyKillSystem
-CollisionSystem
-AcheivementSystem(s)
-
-Glue it together with events that the systems respond to:
-KeyInput
-StartAttack
-Collision
-EnemyHit
-EnemyKilled
-
-
-Code should not be centralized in one spot,
-e.g. code for player attack does the attack, plays the audio, etc.
-Instead, the code should be centralized around an event that everything responds to,
-or around data (both approaches are basically the same)
-Centralizing code around an event is more of a write data relationship
-Centralizing code around data is more of a read relationship
-
-Compared to extremely centralized code,
-this is a bit slower since less data is shared between game functionality,
-but sharing data by pre-computing it can help.
-It also may seem cumbersome, since everything has to be split up.
-The benefits are plentiful, though
-
-
-State may name clash. Some alternatives for common name clashes:
-GameState -> GameScene, GameScreen, GameStatus, GameStage
-StateMachine, WalkingState -> PhaseMachine, WalkingPhase
 
 
 ### Entity creation
@@ -161,12 +81,9 @@ Components can be created large and then later broken down into a batch of multi
 - dynamic handlers?
 - 3.11 typing features
 - fix multibinding typing
-- check set_key typing
-- convert _bindings_ to EventHandler dict keys
 - system "new" method instantiation
 - `__future__.annotations`
 - type aliases
-- possibly entity, stmgr getitem iterable
 - 'direct', 'indirect', 'strict', 'immediate' vocab docs
 - validate subclasses: hash, mro
 - sys mgr expose handlers + bind predicate/filter + _Binding public
@@ -174,7 +91,6 @@ Components can be created large and then later broken down into a batch of multi
 - picklable `__setstate__ __getstate__ __copy__` classes
 - 'processor' game pump generator yield event method, 'event loop'
 - discard method
-- possibly entity and statemanager base class (better for user subclassing)
 - keys method (for dict protocol)
 - improve error messages
 - raise from None bad
