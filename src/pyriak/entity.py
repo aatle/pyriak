@@ -93,7 +93,7 @@ class Entity:
       raise
 
   def __setitem__(self, component_type: type[_T], component: _T, /):
-    self.remove(*self(component_type))
+    self.pop(component_type, None)
     self.add(component)
 
   def __delitem__(self, component_type: type, /):

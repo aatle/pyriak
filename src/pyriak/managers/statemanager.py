@@ -79,7 +79,7 @@ class StateManager:
       raise
 
   def __setitem__(self, state_type: type[_T], state: _T, /):
-    self.remove(*self(state_type))
+    self.pop(state_type, None)
     self.add(state)
 
   def __delitem__(self, state_type: type, /):
