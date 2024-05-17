@@ -4,7 +4,7 @@ from collections.abc import Hashable, Iterable, Iterator, Mapping
 from typing import TYPE_CHECKING, Any, NamedTuple
 from weakref import ref as weakref
 
-from pyriak import EventQueue, dead_weakref, subclasses
+from pyriak import EventQueue, dead_weakref, strict_subclasses, subclasses
 from pyriak.eventkey import key_functions
 from pyriak.events import (
   EventHandlerAdded,
@@ -321,7 +321,7 @@ class SystemManager:
         [(event_type, binding)] = bindings.items()
         handler = _EventHandler(system, callback, name, binding.priority)
         event_handlers = {
-          cls: handler for cls in subclasses(event_type) if cls in all_handlers
+          cls: handler for cls in strict_subclasses(event_type) if cls in all_handlers
         }
         key_event_types = event_handlers.keys() & all_key_handlers
         event_handlers[event_type] = handler
@@ -362,7 +362,7 @@ class SystemManager:
         for cls in {
           cls
           for event_type in bindings
-          for cls in subclasses(event_type)
+          for cls in strict_subclasses(event_type)
           if cls in all_handlers
         }:
           for base in cls.__mro__:
