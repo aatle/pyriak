@@ -9,14 +9,14 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.10"
 
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.4.4"
+mypy = "^1.10.0"
+
 [tool.poetry.urls]
 Repository = "https://github.com/aatle/pyriak.git"
 Issues = "https://github.com/aatle/pyriak/issues"
 
-
-[tool.poetry.group.dev.dependencies]
-ruff = "^0.4.4"
-mypy = "^1.10.0"
 
 [build-system]
 requires = ["poetry-core"]
