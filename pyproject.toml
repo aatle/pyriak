@@ -53,3 +53,7 @@ ignore = ["SIM105"]
 [tool.ruff.lint.isort]
 lines-after-imports = 2
 combine-as-imports = true
+
+
+[tool.mypy]
+check_untyped_defs = true
