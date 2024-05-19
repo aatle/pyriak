@@ -142,7 +142,7 @@ def first(arg: _T, *args: _Any) -> _T:  # noqa: ARG001
 class _Sentinel(_Enum):
   SENTINEL = 1
 
-_SENTINEL = _Sentinel.SENTINEL
+_SENTINEL: _Sentinel = _Sentinel.SENTINEL
 
 
 # circular imports
