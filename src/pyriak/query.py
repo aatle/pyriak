@@ -8,7 +8,7 @@ __all__ = [
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, KeysView, ValuesView
-from typing import Any, Callable, NoReturn, TypeVar, overload
+from typing import Any, Callable, TypeVar, overload
 
 from pyriak.entity import Entity, EntityId
 
@@ -19,13 +19,9 @@ _T = TypeVar('_T')
 class Query:
   __slots__ = '_types', '_merge'
 
-  @overload
-  def __init__(self, *, merge: Callable[..., set] = set.intersection) -> NoReturn: ...
-  @overload
   def __init__(
     self, *component_types: type, merge: Callable[..., set] = set.intersection
-  ): ...
-  def __init__(self, *component_types, merge=set.intersection):
+  ):
     if not component_types:
       raise TypeError('expected at least one component type')
     self._types = component_types
@@ -60,8 +56,7 @@ class Query:
   def __eq__(self, other: object, /):
     if not isinstance(other, Query):
       return NotImplemented
-    # TODO: investigate unusual problem with type narrowing
-    return self._types == other._types and self._merge == other._merge  # type: ignore
+    return self._types == other._types and self._merge == other._merge
 
   def __hash__(self):
     return hash((self._types,self._merge))

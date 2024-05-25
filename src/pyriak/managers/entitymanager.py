@@ -1,7 +1,7 @@
 __all__ = ['EntityManager']
 
 from collections.abc import Iterable, Iterator, KeysView
-from typing import Callable, NoReturn, TypeVar, overload
+from typing import Callable, TypeVar, overload
 from weakref import ref as weakref
 
 from pyriak import _SENTINEL, EventQueue, dead_weakref, subclasses
@@ -171,13 +171,7 @@ class EntityManager:
   def query(self, query: Query, /) -> ComponentQueryResult: ...
   @overload
   def query(
-    self, /, *, merge: Callable[..., set] = set.intersection,
-  ) -> NoReturn: ...
-  @overload
-  def query(
-    self, /,
-    *component_types: type,
-    merge: Callable[..., set] = set.intersection,
+    self, /, *component_types: type, merge: Callable[..., set] = set.intersection
   ) -> ComponentQueryResult: ...
   def query(self, /, *types, merge=None):
     """"""
@@ -187,13 +181,7 @@ class EntityManager:
   def entity_query(self, query: Query, /) -> EntityQueryResult: ...
   @overload
   def entity_query(
-    self, /, *, merge: Callable[..., set] = set.intersection,
-  ) -> NoReturn: ...
-  @overload
-  def entity_query(
-    self, /,
-    *component_types: type,
-    merge: Callable[..., set] = set.intersection,
+    self, /, *component_types: type, merge: Callable[..., set] = set.intersection
   ) -> EntityQueryResult: ...
   def entity_query(self, /, *types, merge=None):
     """"""
@@ -203,13 +191,7 @@ class EntityManager:
   def id_query(self, query: Query, /) -> IdQueryResult: ...
   @overload
   def id_query(
-    self, /, *, merge: Callable[..., set] = set.intersection,
-  ) -> NoReturn: ...
-  @overload
-  def id_query(
-    self, /,
-    *component_types: type,
-    merge: Callable[..., set] = set.intersection,
+    self, /, *component_types: type, merge: Callable[..., set] = set.intersection
   ) -> IdQueryResult: ...
   def id_query(self, /, *types, merge=None):
     """"""
