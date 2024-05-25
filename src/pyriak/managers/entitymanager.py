@@ -207,7 +207,7 @@ class EntityManager:
     elif merge is None:
       merge = set.intersection
     if not types:
-      raise ValueError('expected at least one type in component types')
+      raise TypeError('expected at least one component type')
     self_entities = self._entities
     self_component_types = self._component_types
     return result_cls(
