@@ -121,8 +121,6 @@ class EventKeyFunctions:
     self.update(other)
     return self
 
-  __copy__ = None  # type: ignore
-
   def copy(self):
     return self._data.copy()
 
