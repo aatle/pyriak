@@ -1,6 +1,8 @@
 __all__ = ['SystemManager']
 
 from collections.abc import Hashable, Iterable, Iterator, Mapping
+from inspect import getattr_static
+from types import ModuleType
 from typing import TYPE_CHECKING, Any, NamedTuple
 from weakref import ref as weakref
 
@@ -14,7 +16,7 @@ from pyriak.events import (
   SystemAdded,
   SystemRemoved,
 )
-from pyriak.system import System, _Callback
+from pyriak.system import BindingWrapper, System, _Callback
 
 
 if TYPE_CHECKING:
@@ -142,15 +144,21 @@ class SystemManager:
       events = bind(system)
       space = self.space
       event_queue = self.event_queue
-      if space is None:
-        if event_queue is not None:
-          event_queue.extend([
-            SpaceCallback(system._added_), SystemAdded(system), *events
-          ])
-      else:
+      if space is not None:
         if event_queue is not None:
           event_queue.extend([SystemAdded(system), *events])
-        system._added_(space)
+        try:
+          added = system._added_  # type: ignore[attr-defined]
+        except AttributeError:
+          continue
+        added(space)
+      elif event_queue is not None:
+        try:
+          added = system._added_  # type: ignore[attr-defined]
+        except AttributeError:
+          event_queue.extend([SystemAdded(system), *events])
+        else:
+          event_queue.extend([SpaceCallback(added), SystemAdded(system), *events])
 
   def remove(self, *systems: System) -> None:
     """Remove systems and their event handlers from self.
@@ -166,15 +174,21 @@ class SystemManager:
       events = unbind(system)
       space = self.space
       event_queue = self.event_queue
-      if space is None:
-        if event_queue is not None:
-          event_queue.extend([
-            SpaceCallback(system._removed_), SystemRemoved(system), *events
-          ])
-      else:
+      if space is not None:
         if event_queue is not None:
           event_queue.extend([SystemRemoved(system), *events])
-        system._removed_(space)
+        try:
+          removed = system._removed_  # type: ignore[attr-defined]
+        except AttributeError:
+          continue
+        removed(space)
+      elif event_queue is not None:
+        try:
+          removed = system._removed_  # type: ignore[attr-defined]
+        except AttributeError:
+          event_queue.extend([SystemRemoved(system), *events])
+        else:
+          event_queue.extend([SpaceCallback(removed), SystemRemoved(system), *events])
 
   def discard(self, *systems: System) -> None:
     self_systems = self._systems
@@ -219,7 +233,7 @@ class SystemManager:
   def _insert_handler(list: list[_EventHandler], handler: _EventHandler, /) -> None:
     """Inserts a handler into a list of other handlers.
 
-    Sorts by: highest priority, then oldest handler.
+    Sorts by: highest priority, then oldest in manager
     """
     priority = handler.priority
     lo = 0
@@ -246,16 +260,18 @@ class SystemManager:
         return other_priority < handler_priority
       system = handler.system
       other_system = other_handler.system
-      if system is not other_system:
+      if system != other_system:
         for s in self.systems:
-          if s is system:
+          if s == system:
             return True
-          if s is other_system:
+          if s == other_system:
             return False
         raise ValueError
       name = handler.name
       other_name = other_handler.name
-      for n in system._handlers_:
+      if type(system) is not ModuleType:
+        return name < other_name
+      for n in system.__dict__:
         if other_name == n:
           return False
         if name == n:
@@ -265,6 +281,15 @@ class SystemManager:
   def _sort_handlers(
     self, handlers: Iterable[_EventHandler], /
   ) -> list[_EventHandler]:
+    """Return a sorted list of handlers.
+
+    Sorts by, in order:
+    - highest priority
+    - least recently added system
+    - (same system) order the handlers were added in
+      - if system is module instance, then order created
+      - otherwise, alphabetical names
+    """
     SortKey = self._SortKey
     systems = self._systems
     # Uses dict to remove duplicates while preserving some order
@@ -296,6 +321,23 @@ class SystemManager:
       return key_handlers[keys.pop()]
     return handlers
 
+  @staticmethod
+  def _get_bindings(system: System):
+    if type(system) is ModuleType:
+      return [
+        (name, wrapper.__bindings__, wrapper.__wrapped__)
+        for name, wrapper in system.__dict__.items()
+        if isinstance(wrapper, BindingWrapper)
+      ]
+    return [
+      (
+        name, wrapper.__bindings__,
+        c if (c:=getattr(system, name)) is not wrapper else wrapper.__wrapped__
+      )
+      for name in dict.fromkeys(dir(system))
+      if isinstance((wrapper:=getattr_static(system, name)), BindingWrapper)
+    ]
+
   def _bind(self, system: System, /) -> list[EventHandlerAdded]:
     """Bind a system's handlers so that they can process events.
 
@@ -305,21 +347,21 @@ class SystemManager:
     Bindings of an event type are sorted by highest priority,
     then oldest system, then first one bound in system.
     """
-    if not isinstance(system, System):
-      raise TypeError(f'{system!r} is not a System')
-    if not system._bindings_:
+    system_bindings = self._get_bindings(system)
+    if not system_bindings:
       return []
+    fromkeys = dict.fromkeys
     handler_events: list[EventHandlerAdded] = []
     all_handlers = self._handlers
     all_key_handlers = self._key_handlers
     insert_handler = self._insert_handler
-    fromkeys = dict.fromkeys
-    for name, bindings in system._bindings_.items():
-      callback = getattr(system, name)
+    for name, bindings, callback in system_bindings:
       if len(bindings) == 1:
         # the common case of only one event type for a handler (single @bind())
-        [(event_type, binding)] = bindings.items()
+        binding = bindings[0]
+        event_type = binding.event_type
         handler = _EventHandler(system, callback, name, binding.priority)
+        binding_keys = binding.keys
         event_handlers = {
           cls: handler for cls in strict_subclasses(event_type) if cls in all_handlers
         }
@@ -327,7 +369,6 @@ class SystemManager:
         event_handlers[event_type] = handler
         if key_functions.exists(event_type):
           key_event_types.add(event_type)
-        binding_keys = binding.keys
         handler_keys: dict[type, Mapping[Hashable, _EventHandler]] = (
           fromkeys(key_event_types, fromkeys(binding_keys, handler))
           if binding_keys else {}
@@ -337,8 +378,10 @@ class SystemManager:
         event_handlers = {}
         base_handler_keys: dict[type, Mapping[Hashable, _EventHandler]] = {}
         cached_handlers: dict[int, _EventHandler] = {}
-        for event_type, binding in bindings.items():
+        for binding in bindings:
+          event_type = binding.event_type
           priority = binding.priority
+          binding_keys = binding.keys
           priority_id = id(priority)
           if priority_id in cached_handlers:
             handler = cached_handlers[priority_id]
@@ -347,7 +390,6 @@ class SystemManager:
               system, callback, name, priority
             )
           event_handlers[event_type] = handler
-          binding_keys = binding.keys
           if binding_keys:
             base_handler_keys[event_type] = fromkeys(binding_keys, handler)
           handler_events.append(EventHandlerAdded(handler, event_type, binding_keys))
@@ -359,21 +401,22 @@ class SystemManager:
         # but the first bound type in its MRO will take precedence
         # for shared keys (or when the subclass is keyless).
         # A bound event type may be the subclass of other bound event types.
+        event_types = set(event_handlers)
         for cls in {
           cls
-          for event_type in bindings
+          for event_type in event_types
           for cls in strict_subclasses(event_type)
           if cls in all_handlers
         }:
           for base in cls.__mro__:
-            if base in bindings:
+            if base in event_types:
               event_handlers[cls] = event_handlers[base]
               break
           else:
             raise RuntimeError
         handler_keys = {}
         key_event_types = event_handlers.keys() & all_key_handlers
-        key_event_types |= {ev_t for ev_t in bindings if key_functions.exists(ev_t)}
+        key_event_types |= {ev_t for ev_t in event_types if key_functions.exists(ev_t)}
         for cls in key_event_types:
           inherit_handler_keys: dict[Hashable, _EventHandler] = {}
           total_len = 0
@@ -470,15 +513,16 @@ class SystemManager:
     events: list[EventHandlerRemoved] = []
     all_handlers = self._handlers
     all_key_handlers = self._key_handlers
-    for name, event_types in system._bindings_.items():
-      for cls, binding in event_types.items():
+    for name, bindings, callback in self._get_bindings(system):
+      for binding in bindings:
+        cls = binding.event_type
         for event_type in subclasses(cls):
           try:
             handlers = all_handlers[event_type]
           except KeyError:
             continue
           handlers[:] = [
-            handler for handler in handlers if handler.system is not system
+            handler for handler in handlers if handler.system != system
           ]
           if not handlers:
             del all_handlers[event_type]
@@ -487,13 +531,13 @@ class SystemManager:
           key_handlers = all_key_handlers[event_type]
           for key, handlers in key_handlers.items():
             handlers[:] = [
-              handler for handler in handlers if handler.system is not system
+              handler for handler in handlers if handler.system != system
             ]
             if not handlers:
               del key_handlers[key]
           if not key_handlers:
             del all_key_handlers[event_type]
         events.append(EventHandlerRemoved(
-          system, getattr(system, name), name, binding.priority, cls, binding.keys
+          system, callback, name, binding.priority, cls, binding.keys
         ))
     return events
