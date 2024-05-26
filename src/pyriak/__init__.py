@@ -146,15 +146,11 @@ _SENTINEL: _Sentinel = _Sentinel.SENTINEL
 
 
 # circular imports
-from pyriak import _importer  # noqa: E402
 from pyriak.entity import Entity, EntityId  # noqa: E402
 from pyriak.eventkey import key_functions, set_key  # noqa: E402
 from pyriak.query import Query  # noqa: E402
 from pyriak.space import Space  # noqa: E402
 from pyriak.system import System, bind  # noqa: E402
-
-
-_importer.install()  # install meta path finder for system initialization
 
 
 # cleanup namespace
