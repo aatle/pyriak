@@ -84,11 +84,11 @@ def bind(event_type, priority, /, *, key=_SENTINEL, keys=_SENTINEL):
   def decorator(callback: _Callback[_T, _R], /) -> _Callback[_T, _R]:
     if not isinstance(callback, BindingWrapper):
       return BindingWrapper(callback, (Binding(event_type, priority, keys),))
-    for binding in callback._bindings_:
+    for binding in callback.__bindings__:
       if event_type is binding.event_type:
         raise ValueError(
           f'{event_type!r} is already bound to event handler {callback._callback_!r}'
         )
-    callback._bindings_ += (Binding(event_type, priority, keys),)
+    callback.__bindings__ += (Binding(event_type, priority, keys),)
     return callback
   return decorator
