@@ -71,7 +71,11 @@ class Query:
 class QueryResult(ABC):
   __slots__ = '_entities', '_types', '_merge'
 
-  def __init__(self, _entities, _types, _merge, /):
+  def __init__(
+    self, _entities: dict[EntityId, Entity],
+    _types: tuple[type, ...],
+    _merge: Callable[..., set], /
+  ):
     self._entities = _entities
     self._types = _types
     self._merge = _merge

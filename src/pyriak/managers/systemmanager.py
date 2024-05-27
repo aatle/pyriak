@@ -257,7 +257,7 @@ class SystemManager:
       other_priority = other_handler.priority
       handler_priority = handler.priority
       if not (other_priority == handler_priority):
-        return other_priority < handler_priority
+        return other_priority < handler_priority  # type: ignore[no-any-return]
       system = handler.system
       other_system = other_handler.system
       if system != other_system:

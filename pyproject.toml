@@ -58,3 +58,4 @@ combine-as-imports = true
 [tool.mypy]
 check_untyped_defs = true
 warn_unused_ignores = true
+warn_return_any = true
