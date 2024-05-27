@@ -5,7 +5,10 @@ A lightweight implementation of Entity Component System architecture for Python.
 
 
 ## Concepts
-
+Object oriented programming is used for many projects.
+In larger, more complex projects, it can have some shortcomings.
+The inheritance hierarchies can become messy and inflexible,
+forcing the base classes to grow in size when code reuse is needed.
 
 
 ## Usage
@@ -27,7 +30,7 @@ player = space.entities.create(
 ```
 A listening system can extend a created entity.
 ```py
-@bind(ComponentAdded, 200, RocketBooster):
+@bind(ComponentAdded, 200, RocketBooster)
 def add_rocket_exhaust(space, event):
   event.entity.add(ParticleEmitter(rocket_particles))
 ```
