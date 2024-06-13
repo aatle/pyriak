@@ -88,7 +88,6 @@ class SystemManager:
     """Handle an event. Callbacks of the event are passed space and event.
 
     If the Event type has no binds, do nothing.
-    If event is an instance of SpaceCallback or SendEvent, it is handled differently.
     If a callback returns a truthy value, the
     rest of the callbacks are skipped and True is returned, else False.
     """
