@@ -26,7 +26,6 @@ from typing import (
   Literal as _Literal,
   TypeAlias as _TypeAlias,
   TypeVar as _TypeVar,
-  overload as _overload,
 )
 from weakref import ref as _weakref
 
@@ -86,57 +85,24 @@ def strict_subclasses(cls: _TypeT, /) -> _Generator[_TypeT, None, _TypeT]:
   return cls
 
 
-@_overload
-def tagclass(cls: _TypeT, /) -> _TypeT: ...
-@_overload
-def tagclass(
-  name: str, bases: tuple[type, ...] = (), namespace: dict[str, _Any] = ..., /
-) -> type: ...
-def tagclass(*args) -> type:
-  """Make a tag class.
-
-  A tag class has instances that are all equal and carry no mutable/instance data.
-  These instances serve as tags, or markers, which can be useful in component queries.
-
-  Ways to use tag:
-  - plain decorator: mutates class inplace
-  - call with cls arg: same as plain decorator
-  - call with type signature, creates class
-
-  This is useful for dataless events and 'tag' components.
-  """
-
-  try:
-    first = args[0]
-  except IndexError:
-    raise TypeError('tag must have at least one argument') from None
-  def __eq__(self, other):  # noqa: ARG001
-    return isinstance(other, cls)
-  def __hash__(self):  # noqa: ARG001
-    return hash((cls,))  # does not hash subclass: only uses the decorated class
-  if isinstance(first, type):
-    if len(args) != 1:
-      raise TypeError(
-        'tag() takes exactly one argument when first argument is a type '
-        f'({len(args)} given)'
-      )
-    cls = first
-    cls.__eq__ = __eq__  # type: ignore
-    cls.__hash__ = __hash__  # type: ignore
-    return cls
-  num_args = len(args)
-  namespace = {'__slots__': (), '__eq__': __eq__, '__hash__': __hash__}
-  if num_args < 3:
-    bases = () if num_args == 1 else args[1]
-  elif num_args == 3:
-    bases = args[1]
-    if not isinstance(args[2], dict):
-      raise TypeError(args[2])
-    namespace.update(args[2])
-  else:
-    raise TypeError('tag() takes at most 3 arguments')
-  cls = type(first, bases, namespace)  # required variable so dunder methods know cls
-  return cls  # noqa: RET504
+def tagclass(cls: type) -> type:
+  namespace = dict(cls.__dict__)
+  namespace.setdefault('__slots__', ())
+  namespace.pop('__dict__', None)
+  namespace.pop('__weakref__', None)
+  qualname = getattr(cls, '__qualname__', None)
+  cls = type(cls)(cls.__name__, cls.__bases__, namespace)
+  if qualname is not None:
+    cls.__qualname__ = qualname
+  def __eq__(self, other):
+    if other is self or type(other) is type(self):
+      return True
+    return NotImplemented
+  def __hash__(self):
+    return hash((type(self),))
+  cls.__eq__ = __eq__  # type: ignore[method-assign, assignment]
+  cls.__hash__ = __hash__  # type: ignore[method-assign, assignment]
+  return cls
 
 
 def first(arg: _T, *args: _Any) -> _T:  # noqa: ARG001
