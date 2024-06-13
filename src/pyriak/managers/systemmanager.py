@@ -11,8 +11,6 @@ from pyriak.eventkey import key_functions
 from pyriak.events import (
   EventHandlerAdded,
   EventHandlerRemoved,
-  SendEvent,
-  SpaceCallback,
   SystemAdded,
   SystemRemoved,
 )
@@ -97,19 +95,9 @@ class SystemManager:
     space = self.space
     if space is None:
       raise TypeError("process() missing 'space'")
-    for handler in self._get_handlers(event)[:]:
+    for handler in self._get_handlers(event)[:]:  # noqa: SIM110
       if handler.callback(space, event):
         return True
-    if isinstance(event, SpaceCallback) and event(space):
-      return True
-    if isinstance(event, SendEvent):
-      receivers = event.receivers
-      event = event.event
-      for handler in [
-        handler for handler in self._get_handlers(event) if handler.system in receivers
-      ]:
-        if handler.callback(space, event):
-          return True
     return False
 
   def add(self, *systems: System) -> None:
