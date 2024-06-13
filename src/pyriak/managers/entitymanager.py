@@ -268,34 +268,28 @@ class EntityManager:
   def clear(self):
     self.remove(*self)
 
-  def _components_added(
-    self, entity_id: EntityId, components: Iterable[object], events: Iterable[object], /
-  ) -> None:
+  def _component_added(self, entity: Entity, component: object, /) -> None:
     component_types = self._component_types
-    for component_type in {
-      component_type
-      for component in components
-      for component_type in type(component).__mro__
-    }:
+    entity_id = entity.id
+    for component_type in type(component).__mro__:
       try:
         component_types[component_type].add(entity_id)
       except KeyError:
         component_types[component_type] = {entity_id}
-    if (queue := self.event_queue) is not None:
-      queue.extend(events)
+    event_queue = self.event_queue
+    if event_queue is not None:
+      event_queue.append(ComponentAdded(entity, component))
 
-  def _components_removed(self, entity: Entity, components: Iterable[object], /) -> None:
+  def _component_removed(self, entity: Entity, component: object, /) -> None:
     component_types = self._component_types
     entity_id = entity.id
-    for component_type in {
-      component_type
-      for component in components
-      for component_type in type(component).__mro__
-      if component_type not in entity
-    }:
+    for component_type in type(component).__mro__:
+      if component_type in entity:
+        continue
       entity_ids = component_types[component_type]
       entity_ids.remove(entity_id)
       if not entity_ids:
         del component_types[component_type]
-    if (queue := self.event_queue) is not None:
-      queue.extend([ComponentRemoved(entity, component) for component in components])
+    event_queue = self.event_queue
+    if event_queue is not None:
+      event_queue.append(ComponentRemoved(entity, component))

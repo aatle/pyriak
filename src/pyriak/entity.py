@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, NewType, TypeVar, overload
 from uuid import uuid4
 
 from pyriak import _SENTINEL, dead_weakref, strict_subclasses, subclasses
-from pyriak.events import ComponentAdded, ComponentRemoved
 
 
 if TYPE_CHECKING:
@@ -38,25 +37,23 @@ class Entity:
 
   def add(self, *components: object) -> None:
     self_components = self._components
-    events: list[ComponentAdded | ComponentRemoved] = []
-    append_event = events.append
+    manager = self._manager()
     for component in components:
       component_type = type(component)
       if component_type in self_components:
         other_component = self_components[component_type]
         if other_component is component or other_component == component:
           continue
-        append_event(ComponentRemoved(self, other_component))
+        if manager is not None:
+          manager._component_removed(self, other_component)
       self_components[component_type] = component
-      append_event(ComponentAdded(self, component))
-    manager = self._manager()
-    if manager is not None:
-      manager._components_added(self.id, components, events)
+      if manager is not None:
+        manager._component_added(self, component)
 
   def remove(self, *components: object) -> None:
     self_components = self._components
     manager = self._manager()
-    for i, component in enumerate(components):
+    for component in components:
       component_type = type(component)
       try:
         other_component = self_components[component_type]
@@ -65,12 +62,10 @@ class Entity:
       else:
         if other_component is component or other_component == component:
           del self_components[component_type]
+          if manager is not None:
+            manager._component_removed(self, component)
           continue
-      if manager is not None:
-        manager._components_removed(self, components[:i])
       raise ValueError(component)
-    if manager is not None:
-      manager._components_removed(self, components)
 
   def __call__(self, *component_types: type[_T]) -> list[_T]:
     components = self._components
