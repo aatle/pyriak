@@ -143,21 +143,14 @@ class SystemManager:
       events = bind(system)
       space = self.space
       event_queue = self.event_queue
+      if event_queue is not None:
+        event_queue.extend([SystemAdded(system), *events])
       if space is not None:
-        if event_queue is not None:
-          event_queue.extend([SystemAdded(system), *events])
         try:
           added = system._added_  # type: ignore[attr-defined]
         except AttributeError:
           continue
         added(space)
-      elif event_queue is not None:
-        try:
-          added = system._added_  # type: ignore[attr-defined]
-        except AttributeError:
-          event_queue.extend([SystemAdded(system), *events])
-        else:
-          event_queue.extend([SpaceCallback(added), SystemAdded(system), *events])
 
   def remove(self, *systems: System) -> None:
     """Remove systems and their event handlers from self.
@@ -173,21 +166,14 @@ class SystemManager:
       events = unbind(system)
       space = self.space
       event_queue = self.event_queue
+      if event_queue is not None:
+        event_queue.extend([SystemRemoved(system), *events])
       if space is not None:
-        if event_queue is not None:
-          event_queue.extend([SystemRemoved(system), *events])
         try:
           removed = system._removed_  # type: ignore[attr-defined]
         except AttributeError:
           continue
         removed(space)
-      elif event_queue is not None:
-        try:
-          removed = system._removed_  # type: ignore[attr-defined]
-        except AttributeError:
-          event_queue.extend([SystemRemoved(system), *events])
-        else:
-          event_queue.extend([SpaceCallback(removed), SystemRemoved(system), *events])
 
   def discard(self, *systems: System) -> None:
     self_systems = self._systems
