@@ -9,33 +9,35 @@ from pyriak.query import ComponentQueryResult, EntityQueryResult, IdQueryResult,
 
 
 class Space:
-  __slots__ = 'systems', 'entities', 'states', 'event_queue', '__weakref__'
+  __slots__ = 'event_queue', 'systems', 'entities', 'states', '__weakref__'
 
   def __init__(
     self, *,
+    event_queue: EventQueue | None = None,
     systems: managers.SystemManager | None = None,
     entities: managers.EntityManager | None = None,
     states: managers.StateManager | None = None,
-    event_queue: EventQueue | None = None
   ):
     """A new Space instance, which glues together the managers and the event queue.
 
     By default, creates the EntityManager, StateManager, and SystemManager.
     """
-    if systems is None:
-      systems = managers.SystemManager()
-    if entities is None:
-      entities = managers.EntityManager()
-    if states is None:
-      states = managers.StateManager()
     if event_queue is None:
       event_queue = deque()
+    self.event_queue = event_queue
+    if systems is None:
+      systems = managers.SystemManager()
     self.systems = systems
     systems.space = self
+    systems.event_queue = event_queue
+    if entities is None:
+      entities = managers.EntityManager()
     self.entities = entities
+    entities.event_queue = event_queue
+    if states is None:
+      states = managers.StateManager()
     self.states = states
-    self.event_queue = event_queue
-    systems.event_queue = entities.event_queue = states.event_queue = event_queue
+    states.event_queue = event_queue
 
   @overload
   def query(self, query: Query, /) -> ComponentQueryResult: ...
