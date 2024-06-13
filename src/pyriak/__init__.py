@@ -23,7 +23,6 @@ from collections.abc import (
 from enum import Enum as _Enum
 from typing import (
   Any as _Any,
-  Literal as _Literal,
   TypeAlias as _TypeAlias,
   TypeVar as _TypeVar,
 )
@@ -124,4 +123,4 @@ from pyriak.space import Space  # noqa: E402
 
 
 # cleanup namespace
-del _MutableSequence, _Enum, _Literal, _TypeVar, _weakref
+del _MutableSequence, _Enum, _TypeVar, _weakref
