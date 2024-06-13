@@ -66,7 +66,7 @@ class Space:
   def id_query(self, /, *types, merge=None):
     return self.entities.id_query(*types, merge=merge)
 
-  def process(self, event: object):
+  def process(self, event: object) -> bool:
     return self.systems.process(event)
 
   def post(self, *events: object) -> None:
