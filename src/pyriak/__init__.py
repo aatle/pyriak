@@ -17,6 +17,7 @@ __all__ = [
 
 from collections.abc import (
   Generator as _Generator,
+  Hashable as _Hashable,
   MutableSequence as _MutableSequence,
 )
 from enum import Enum as _Enum
@@ -33,6 +34,9 @@ from weakref import ref as _weakref
 _TypeT = _TypeVar('_TypeT', bound=type)
 _T = _TypeVar('_T')
 _D = _TypeVar('_D')
+
+
+System: _TypeAlias = _Hashable
 
 
 EventQueue: _TypeAlias = _MutableSequence[object]
@@ -146,11 +150,11 @@ _SENTINEL: _Sentinel = _Sentinel.SENTINEL
 
 
 # circular imports
+from pyriak.bind import bind  # noqa: E402
 from pyriak.entity import Entity, EntityId  # noqa: E402
 from pyriak.eventkey import key_functions, set_key  # noqa: E402
 from pyriak.query import Query  # noqa: E402
 from pyriak.space import Space  # noqa: E402
-from pyriak.system import System, bind  # noqa: E402
 
 
 # cleanup namespace

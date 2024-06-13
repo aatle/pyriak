@@ -6,7 +6,8 @@ from types import ModuleType
 from typing import TYPE_CHECKING, Any, NamedTuple
 from weakref import ref as weakref
 
-from pyriak import EventQueue, dead_weakref, strict_subclasses, subclasses
+from pyriak import EventQueue, System, dead_weakref, strict_subclasses, subclasses
+from pyriak.bind import BindingWrapper, _Callback
 from pyriak.eventkey import key_functions
 from pyriak.events import (
   EventHandlerAdded,
@@ -14,7 +15,6 @@ from pyriak.events import (
   SystemAdded,
   SystemRemoved,
 )
-from pyriak.system import BindingWrapper, System, _Callback
 
 
 if TYPE_CHECKING:

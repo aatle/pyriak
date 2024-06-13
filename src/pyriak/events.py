@@ -19,9 +19,10 @@ from pyriak.eventkey import set_key as _set_key
 
 
 if TYPE_CHECKING:
+  from pyriak import System
+  from pyriak.bind import _Callback
   from pyriak.entity import Entity
   from pyriak.managers.systemmanager import _EventHandler
-  from pyriak.system import System, _Callback
 
 
 class EntityAdded:

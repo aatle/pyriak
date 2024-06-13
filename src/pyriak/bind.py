@@ -1,4 +1,4 @@
-__all__ = ['bind', 'System', 'BindingWrapper', 'Binding']
+__all__ = ['bind', 'BindingWrapper', 'Binding']
 
 from collections.abc import Callable, Hashable, Iterable
 from functools import update_wrapper
@@ -22,9 +22,6 @@ class Binding(NamedTuple):
   event_type: type
   priority: Any
   keys: frozenset[Hashable]
-
-
-System: TypeAlias = Hashable
 
 
 class BindingWrapper:
