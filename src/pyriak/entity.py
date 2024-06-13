@@ -1,4 +1,4 @@
-__all__ = ['Entity']
+__all__ = ['Entity', 'EntityId']
 
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, NewType, TypeVar, overload
