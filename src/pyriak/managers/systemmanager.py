@@ -86,7 +86,7 @@ class SystemManager:
     self._key_handlers: dict[type, dict[Hashable, list[_EventHandler]]] = {}
     self.add(*systems)
 
-  def process(self, event: object, space: 'Space | None' = None) -> bool:
+  def process(self, event: object) -> bool:
     """Handle an event. Callbacks of the event are passed space and event.
 
     If the Event type has no binds, do nothing.
@@ -94,10 +94,9 @@ class SystemManager:
     If a callback returns a truthy value, the
     rest of the callbacks are skipped and True is returned, else False.
     """
+    space = self.space
     if space is None:
-      space = self.space
-      if space is None:
-        raise TypeError("process() missing 'space'")
+      raise TypeError("process() missing 'space'")
     for handler in self._get_handlers(event)[:]:
       if handler.callback(space, event):
         return True

@@ -65,7 +65,7 @@ class Space:
     return self.entities.id_query(*types, merge=merge)
 
   def process(self, event: object):
-    return self.systems.process(event, space=self)
+    return self.systems.process(event)
 
   def post(self, *events: object) -> None:
     self.event_queue.extend(events)
