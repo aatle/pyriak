@@ -21,7 +21,14 @@
 # SOFTWARE.
 # ----------------------------------------------------------------------------
 
-""""""
+"""Pyriak is a framework for ECS architecture.
+
+This implementation integrates the concepts of event handling and polymorphism.
+The package is written in pure python and has no dependencies.
+
+This module is the top-level module of the package and contains
+most of the things necessary to use this package.
+"""
 
 __all__ = [
   'Space',
