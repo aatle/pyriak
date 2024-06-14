@@ -31,12 +31,13 @@ most of the things necessary to use this package.
 """
 
 __all__ = [
-  'Space',
-  'System',
   'bind',
+  'Space',
+  'Query',
   'Entity',
   'EntityId',
-  'Query',
+  'System',
+  'EventQueue',
   'subclasses',
   'strict_subclasses',
   'key_functions',
