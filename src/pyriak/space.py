@@ -40,29 +40,29 @@ class Space:
     states.event_queue = event_queue
 
   @overload
-  def query(self, query: Query, /) -> ComponentQueryResult: ...
-  @overload
   def query(
     self, /, *component_types: type, merge: Callable[..., set] = set.intersection
   ) -> ComponentQueryResult: ...
+  @overload
+  def query(self, query: Query, /) -> ComponentQueryResult: ...
   def query(self, /, *types, merge=None):
     return self.entities.query(*types, merge=merge)
 
   @overload
-  def entity_query(self, query: Query, /) -> EntityQueryResult: ...
-  @overload
   def entity_query(
     self, /, *component_types: type, merge: Callable[..., set] = set.intersection
   ) -> EntityQueryResult: ...
+  @overload
+  def entity_query(self, query: Query, /) -> EntityQueryResult: ...
   def entity_query(self, /, *types, merge=None):
     return self.entities.entity_query(*types, merge=merge)
 
   @overload
-  def id_query(self, query: Query, /) -> IdQueryResult: ...
-  @overload
   def id_query(
     self, /, *component_types: type, merge: Callable[..., set] = set.intersection
   ) -> IdQueryResult: ...
+  @overload
+  def id_query(self, query: Query, /) -> IdQueryResult: ...
   def id_query(self, /, *types, merge=None):
     return self.entities.id_query(*types, merge=merge)
 

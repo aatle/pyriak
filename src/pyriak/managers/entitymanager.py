@@ -168,31 +168,31 @@ class EntityManager:
     return entity
 
   @overload
-  def query(self, query: Query, /) -> ComponentQueryResult: ...
-  @overload
   def query(
     self, /, *component_types: type, merge: Callable[..., set] = set.intersection
   ) -> ComponentQueryResult: ...
+  @overload
+  def query(self, query: Query, /) -> ComponentQueryResult: ...
   def query(self, /, *types, merge=None):
     """"""
     return self._query(ComponentQueryResult, types, merge)
 
   @overload
-  def entity_query(self, query: Query, /) -> EntityQueryResult: ...
-  @overload
   def entity_query(
     self, /, *component_types: type, merge: Callable[..., set] = set.intersection
   ) -> EntityQueryResult: ...
+  @overload
+  def entity_query(self, query: Query, /) -> EntityQueryResult: ...
   def entity_query(self, /, *types, merge=None):
     """"""
     return self._query(EntityQueryResult, types, merge)
 
   @overload
-  def id_query(self, query: Query, /) -> IdQueryResult: ...
-  @overload
   def id_query(
     self, /, *component_types: type, merge: Callable[..., set] = set.intersection
   ) -> IdQueryResult: ...
+  @overload
+  def id_query(self, query: Query, /) -> IdQueryResult: ...
   def id_query(self, /, *types, merge=None):
     """"""
     return self._query(IdQueryResult, types, merge)
