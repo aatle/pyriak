@@ -2,7 +2,7 @@ __all__ = ['bind', 'BindingWrapper', 'Binding']
 
 from collections.abc import Callable, Hashable, Iterable
 from functools import update_wrapper
-from typing import TYPE_CHECKING, Any, NamedTuple, TypeAlias, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Generic, NamedTuple, TypeAlias, TypeVar, overload
 
 from pyriak import _SENTINEL
 from pyriak.eventkey import key_functions
@@ -24,16 +24,16 @@ class Binding(NamedTuple):
   keys: frozenset[Hashable]
 
 
-class BindingWrapper:
+class BindingWrapper(Generic[_T, _R]):
   """A wrapper for the event handler callback which holds the bindings."""
 
-  __wrapped__: Callable
+  __wrapped__: Callable[..., _R]
 
-  def __init__(self, wrapped: Callable, bindings: tuple[Binding, ...], /):
+  def __init__(self, wrapped: Callable[..., _R], bindings: tuple[Binding, ...], /):
     self.__bindings__ = bindings
     update_wrapper(self, wrapped)
 
-  def __call__(self, /, *args, **kwargs):
+  def __call__(self, /, *args, **kwargs) -> _R:
     return self.__wrapped__(*args, **kwargs)
 
   def __get__(self, obj, objtype=None):
