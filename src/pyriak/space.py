@@ -75,11 +75,7 @@ class Space:
   def pump(self, events: int | None = None) -> int:
     process_event = self.process
     queue = self.event_queue
-    if isinstance(queue, deque):
-      pop = queue.popleft
-    else:
-      def pop():
-        return queue.pop(0)
+    pop = queue.popleft if isinstance(queue, deque) else lambda: queue.pop(0)
     i = -1
     if events is None:
       while queue:
