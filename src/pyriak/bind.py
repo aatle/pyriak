@@ -2,7 +2,16 @@ __all__ = ['bind', 'BindingWrapper', 'Binding']
 
 from collections.abc import Callable, Hashable, Iterable
 from functools import update_wrapper
-from typing import TYPE_CHECKING, Any, Generic, NamedTuple, TypeAlias, TypeVar, overload
+from typing import (
+  TYPE_CHECKING,
+  Any,
+  Generic,
+  NamedTuple,
+  Protocol,
+  TypeAlias,
+  TypeVar,
+  overload,
+)
 
 from pyriak import _SENTINEL
 from pyriak.eventkey import key_functions
@@ -14,6 +23,7 @@ if TYPE_CHECKING:
 
 _T = TypeVar('_T')
 _R = TypeVar('_R')
+_S = TypeVar('_S')
 
 _Callback: TypeAlias = Callable[['Space', _T], _R]
 
@@ -45,18 +55,27 @@ class BindingWrapper(Generic[_T, _R]):
     return descr_get(wrapped, obj, objtype)
 
 
+class _Decorator(Protocol, Generic[_T]):
+  @overload
+  def __call__(
+    self, callback: BindingWrapper[_S, _R], /
+  ) -> BindingWrapper[_S | _T, _R]: ...
+  @overload
+  def __call__(self, callback: _Callback[_T, _R], /) -> BindingWrapper[_T, _R]: ...
+
+
 @overload
 def bind(
   event_type: type[_T], priority: Any, /
-) -> Callable[[_Callback[_T, _R]], _Callback[_T, _R]]: ...
+) -> _Decorator[_T]: ...
 @overload
 def bind(
   event_type: type[_T], priority: Any, /, *, key: Hashable
-) -> Callable[[_Callback[_T, _R]], _Callback[_T, _R]]: ...
+) -> _Decorator[_T]: ...
 @overload
 def bind(
   event_type: type[_T], priority: Any, /, *, keys: Iterable[Hashable]
-) -> Callable[[_Callback[_T, _R]], _Callback[_T, _R]]: ...
+) -> _Decorator[_T]: ...
 def bind(event_type, priority, /, *, key=_SENTINEL, keys=_SENTINEL):
   """Bind a callback to an event type.
 
@@ -78,13 +97,13 @@ def bind(event_type, priority, /, *, key=_SENTINEL, keys=_SENTINEL):
     raise ValueError(
       f'bind(): keys were provided but no key function exists for {event_type!r}'
     )
-  def decorator(callback: _Callback[_T, _R], /) -> _Callback[_T, _R]:
+  def decorator(callback, /):
     if not isinstance(callback, BindingWrapper):
       return BindingWrapper(callback, (Binding(event_type, priority, keys),))
     for binding in callback.__bindings__:
       if event_type is binding.event_type:
         raise ValueError(
-          f'{event_type!r} is already bound to event handler {callback._callback_!r}'
+          f'{event_type!r} is already bound to event handler {callback.__wrapped__!r}'
         )
     callback.__bindings__ += (Binding(event_type, priority, keys),)
     return callback
