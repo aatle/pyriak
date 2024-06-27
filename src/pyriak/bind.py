@@ -103,7 +103,7 @@ def bind(event_type, priority, /, *, key=_SENTINEL, keys=_SENTINEL):
     for binding in callback.__bindings__:
       if event_type is binding.event_type:
         raise ValueError(
-          f'{event_type!r} is already bound to event handler {callback.__wrapped__!r}'
+          f'event handler {callback.__wrapped__!r} already has binding for {event_type!r}'
         )
     callback.__bindings__ += (Binding(event_type, priority, keys),)
     return callback
