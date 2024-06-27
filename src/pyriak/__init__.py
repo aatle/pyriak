@@ -77,20 +77,26 @@ dead_weakref: _weakref[_Any] = _weakref(set())
 _get_subclasses = type.__subclasses__
 
 def subclasses(cls: _TypeT, /) -> _Generator[_TypeT, None, _TypeT]:
-  """Generator of the class and all of the class's subclasses.
+  """Return a generator yielding the class and all of its subclasses.
 
-  Metaclasses also work.
-  There may be duplicates in the case of multiple inheritance.
-  Note: overridden implementations of __subclasses__ are ignored
-  because type.__subclasses__ is used, which also prevents cycles.
+  The class itself is yielded first, and then its subclasses,
+  direct or indirect. The yielded classes satisfy issubclass(ret, cls).
+  Virtual subclasses are not returned.
 
-  The order the classes are returned is not specified, however:
-  It is guaranteed that the cls passed in is the first class yielded.
-  For a tree inheritance structure (single inheritance only), a subclass
-  will never be yielded before any of its superclasses.
+  The order the classes are returned is a depth-first search of the
+  'inheritance tree'. If there is a cycle due to multiple inheritance,
+  a class may be yielded more than once.
 
-  'Return' the cls passed in. (This value is accessible through
-  the StopIteration that is raised).
+  This function uses type.__subclasses__() method, ignoring any overrides.
+
+  The generator returns the cls passed in.
+  (This value is accessible through the StopIteration that is raised).
+
+  Args:
+    cls: The class object whose subclasses will be returned.
+
+  Returns:
+    A generator of classes, including cls, each of which is a subclass of cls.
   """
   yield cls
   get_subclasses = _get_subclasses
@@ -104,7 +110,17 @@ def subclasses(cls: _TypeT, /) -> _Generator[_TypeT, None, _TypeT]:
 
 
 def strict_subclasses(cls: _TypeT, /) -> _Generator[_TypeT, None, _TypeT]:
-  """Same as subclasses, but does not yield the original class."""
+  """Return a generator yielding all of cls's subclasses, excluding cls itself.
+
+  This function is exactly the same as subclasses() except that it does not
+  yield cls as the first value.
+
+  Args:
+    cls: The class object whose subclasses will be returned.
+
+  Returns:
+    A generator of classes, excluding cls, each of which is a subclass of cls.
+  """
   get_subclasses = _get_subclasses
   stack = get_subclasses(cls)
   pop = stack.pop
@@ -116,6 +132,26 @@ def strict_subclasses(cls: _TypeT, /) -> _Generator[_TypeT, None, _TypeT]:
 
 
 def tagclass(cls: type) -> type:
+  """Decorate a class for featureless instances that can serve as 'tags'.
+
+  Certain components, states, and events might not need to carry any
+  data; their mere presence is the information.
+
+  This function, usually used as a decorator on an empty class,
+  is a way to automatically create a class for this purpose.
+
+  The returned class is a new class with the same bases and namespace,
+  and has extra features:
+  - __eq__: True for objects of the exact same type, else NotImplemented
+  - __hash__: same for all objects of the exact same type
+  - __slots__: empty tuple if not already present in namespace, saving memory
+
+  Args:
+    cls: The class to derive name, bases, and namespace from.
+
+  Returns:
+    A new class derived from the original, whose instances are intended as tags.
+  """
   namespace = dict(cls.__dict__)
   namespace.setdefault('__slots__', ())
   namespace.pop('__dict__', None)
@@ -136,6 +172,24 @@ def tagclass(cls: type) -> type:
 
 
 def first(arg: _T, *args: _Any) -> _T:  # noqa: ARG001
+  """Return the first argument passed in.
+
+  In an EntityManager query with multiple types, it is often useful for the
+  merge function to take all entities with a marker component,
+  rather than narrowing those down based on the presence of other components.
+
+  With this function as merge, the query itself would raise a KeyError
+  for missing components.
+  This avoids accidentally hiding malformed entities or missing components,
+  which could lead to subtle and misleading bugs.
+
+  Args:
+    arg: The first argument, which is immediately returned.
+    *args: Arbitrary arguments after the first argument, which are ignored.
+
+  Returns:
+    The first argument given to the function.
+  """
   return arg
 
 
