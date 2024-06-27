@@ -27,14 +27,14 @@ class Binding(NamedTuple):
 class BindingWrapper(Generic[_T, _R]):
   """A wrapper for the event handler callback which holds the bindings."""
 
-  __wrapped__: Callable[..., _R]
+  __wrapped__: _Callback[_T, _R]
 
-  def __init__(self, wrapped: Callable[..., _R], bindings: tuple[Binding, ...], /):
+  def __init__(self, wrapped: _Callback[_T, _R], bindings: tuple[Binding, ...], /):
     self.__bindings__ = bindings
     update_wrapper(self, wrapped)
 
-  def __call__(self, /, *args, **kwargs) -> _R:
-    return self.__wrapped__(*args, **kwargs)
+  def __call__(self, space: 'Space', event: _T, /) -> _R:
+    return self.__wrapped__(space, event)
 
   def __get__(self, obj, objtype=None):
     wrapped = self.__wrapped__
