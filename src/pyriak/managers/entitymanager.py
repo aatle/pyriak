@@ -11,7 +11,6 @@ from pyriak.query import (
   ComponentQueryResult,
   EntityQueryResult,
   IdQueryResult,
-  Query,
   QueryResult,
 )
 
@@ -167,46 +166,33 @@ class EntityManager:
     self.remove(entity)
     return entity
 
-  @overload
   def query(
     self, /, *component_types: type, merge: Callable[..., set] = set.intersection
-  ) -> ComponentQueryResult: ...
-  @overload
-  def query(self, query: Query, /) -> ComponentQueryResult: ...
-  def query(self, /, *types, merge=None):
+  ) -> ComponentQueryResult:
     """"""
-    return self._query(ComponentQueryResult, types, merge)
+    return self._query(ComponentQueryResult, component_types, merge)
 
-  @overload
   def entity_query(
     self, /, *component_types: type, merge: Callable[..., set] = set.intersection
-  ) -> EntityQueryResult: ...
-  @overload
-  def entity_query(self, query: Query, /) -> EntityQueryResult: ...
-  def entity_query(self, /, *types, merge=None):
+  ) -> EntityQueryResult:
     """"""
-    return self._query(EntityQueryResult, types, merge)
+    return self._query(EntityQueryResult, component_types, merge)
 
-  @overload
   def id_query(
     self, /, *component_types: type, merge: Callable[..., set] = set.intersection
-  ) -> IdQueryResult: ...
-  @overload
-  def id_query(self, query: Query, /) -> IdQueryResult: ...
-  def id_query(self, /, *types, merge=None):
+  ) -> IdQueryResult:
     """"""
-    return self._query(IdQueryResult, types, merge)
+    return self._query(IdQueryResult, component_types, merge)
 
-  def _query(self, result_cls: type[_Q], types, merge=None, /) -> _Q:
+  def _query(
+    self,
+    result_cls: type[_Q],
+    component_types: tuple[type, ...],
+    merge: Callable[..., set] = set.intersection,
+    /
+  ) -> _Q:
     """"""
-    if len(types) == 1 and isinstance((query := types[0]), Query):
-      if merge is not None:
-        raise TypeError('unexpected keyword argument: merge')
-      types = query.types
-      merge = query.merge
-    elif merge is None:
-      merge = set.intersection
-    if not types:
+    if not component_types:
       raise TypeError('expected at least one component type')
     self_entities = self._entities
     self_component_types = self._component_types
@@ -216,10 +202,10 @@ class EntityManager:
         for id in merge(*[
           self_component_types[typ]  # noqa: SIM401
           if typ in self_component_types else set()
-          for typ in types
+          for typ in component_types
         ])
       },
-      types,
+      component_types,
       merge
     )
 

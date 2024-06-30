@@ -33,7 +33,6 @@ most of the things necessary to use this package.
 __all__ = [
   'bind',
   'Space',
-  'Query',
   'Entity',
   'EntityId',
   'System',
@@ -149,7 +148,6 @@ _SENTINEL: _Sentinel = _Sentinel.SENTINEL
 from pyriak.bind import bind  # noqa: E402
 from pyriak.entity import Entity, EntityId  # noqa: E402
 from pyriak.eventkey import key_functions, set_key  # noqa: E402
-from pyriak.query import Query  # noqa: E402
 from pyriak.space import Space  # noqa: E402
 
 
