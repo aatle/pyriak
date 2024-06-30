@@ -7,7 +7,7 @@ __all__ = [
 ]
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterator, KeysView, ValuesView
+from collections.abc import Collection, Iterator, Set as AbstractSet
 from typing import Any, Callable, TypeVar, overload
 
 from pyriak.entity import Entity, EntityId
@@ -81,11 +81,11 @@ class QueryResult(ABC):
     self._merge = _merge
 
   @property
-  def ids(self) -> KeysView[EntityId]:
+  def ids(self) -> AbstractSet[EntityId]:
     return self._entities.keys()
 
   @property
-  def entities(self) -> ValuesView[Entity]:
+  def entities(self) -> Collection[Entity]:
     return self._entities.values()
 
   @property
