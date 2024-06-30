@@ -1,5 +1,4 @@
 __all__ = [
-  'Query',
   'QueryResult',
   'ComponentQueryResult',
   'EntityQueryResult',
@@ -14,58 +13,6 @@ from pyriak.entity import Entity, EntityId
 
 
 _T = TypeVar('_T')
-
-
-class Query:
-  __slots__ = '_types', '_merge'
-
-  def __init__(
-    self, *component_types: type, merge: Callable[..., set] = set.intersection
-  ):
-    if not component_types:
-      raise TypeError('expected at least one component type')
-    self._types = component_types
-    self._merge = merge
-
-  @property
-  def types(self) -> tuple[type, ...]:
-    return self._types
-
-  @property
-  def merge(self):
-    return self._merge
-
-  def count(self, value: type, /):
-    return self._types.count(value)
-
-  def index(self, *args):
-    return self._types.index(*args)
-
-  def __getitem__(self, key, /):
-    return self._types[key]
-
-  def __iter__(self):
-    return iter(self._types)
-
-  def __len__(self):
-    return len(self._types)
-
-  def __contains__(self, obj: object, /):
-    return obj in self._types
-
-  def __eq__(self, other: object, /):
-    if not isinstance(other, Query):
-      return NotImplemented
-    return self._types == other._types and self._merge == other._merge
-
-  def __hash__(self):
-    return hash((self._types,self._merge))
-
-  def __repr__(self):
-    return (
-      f'{type(self).__name__}'
-      f'({", ".join(repr(t) for t in self._types)}, merge={self._merge!r})'
-    )
 
 
 class QueryResult(ABC):
@@ -95,10 +42,6 @@ class QueryResult(ABC):
   @property
   def merge(self) -> Callable[..., set]:
     return self._merge
-
-  def query(self) -> Query:
-    """Return a new Query object that describes self."""
-    return Query(*self.types, merge=self.merge)
 
   @overload
   def __call__(self) -> Iterator[Any]: ...
