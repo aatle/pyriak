@@ -1,4 +1,4 @@
-__all__ = ['EntityManager']
+__all__ = ['EntityManager', 'QueryResult']
 
 from collections.abc import Collection, Iterable, Iterator, KeysView, Set as AbstractSet
 from typing import Any, Callable, TypeVar, overload
