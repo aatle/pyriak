@@ -3,7 +3,8 @@ __all__ = ['Space']
 from collections import deque
 from collections.abc import Callable
 
-from pyriak import EventQueue, QueryResult, managers
+from pyriak import EventQueue, managers
+from pyriak.managers.entitymanager import QueryResult
 
 
 class Space:
