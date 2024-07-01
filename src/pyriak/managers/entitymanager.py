@@ -1,22 +1,84 @@
 __all__ = ['EntityManager']
 
-from collections.abc import Iterable, Iterator, KeysView
-from typing import Callable, TypeVar, overload
+from collections.abc import Collection, Iterable, Iterator, KeysView, Set as AbstractSet
+from typing import Any, Callable, TypeVar, overload
 from weakref import ref as weakref
 
 from pyriak import _SENTINEL, EventQueue, dead_weakref, subclasses
 from pyriak.entity import Entity, EntityId
 from pyriak.events import ComponentAdded, ComponentRemoved, EntityAdded, EntityRemoved
-from pyriak.query import (
-  ComponentQueryResult,
-  EntityQueryResult,
-  IdQueryResult,
-  QueryResult,
-)
 
 
 _T = TypeVar('_T')
-_Q = TypeVar('_Q', bound=QueryResult)
+
+
+class QueryResult:
+  __slots__ = '_entities', '_types', '_merge'
+
+  def __init__(
+    self, _entities: dict[EntityId, Entity],
+    _types: tuple[type, ...],
+    _merge: Callable[..., set], /
+  ):
+    self._entities = _entities
+    self._types = _types
+    self._merge = _merge
+
+  @property
+  def ids(self) -> AbstractSet[EntityId]:
+    return self._entities.keys()
+
+  @property
+  def entities(self) -> Collection[Entity]:
+    return self._entities.values()
+
+  @property
+  def types(self) -> tuple[type, ...]:
+    return self._types
+
+  @property
+  def merge(self) -> Callable[..., set]:
+    return self._merge
+
+  @overload
+  def __call__(self) -> Iterator[Any]: ...
+  @overload
+  def __call__(self, *component_types: type[_T]) -> Iterator[_T]: ...
+  def __call__(self, *component_types):
+    if not component_types:
+      component_types = self.types
+    return (comp for ent in self.entities for comp in ent(*component_types))
+
+  def __getitem__(self, component_type: type[_T], /) -> Iterator[_T]:
+    return (ent[component_type] for ent in self.entities)
+
+  #= get method?
+
+  @overload
+  def zip(self) -> Iterator[tuple[Any, ...]]: ...
+  @overload
+  def zip(self, *component_types: type[_T]) -> Iterator[tuple[_T, ...]]: ...
+  def zip(self, *component_types):
+    if not component_types:
+      component_types = self.types
+    return (
+      tuple(ent[comp_type] for comp_type in component_types) for ent in self.entities
+    )
+
+  @overload
+  def zip_entity(self) -> Iterator[tuple[Any, ...]]: ...
+  @overload
+  def zip_entity(
+    self, *component_types: type[_T]
+  ) -> Iterator[tuple[Entity | _T, ...]]: ...
+  def zip_entity(self, *component_types):
+    if not component_types:
+      component_types = self.types
+    return (
+      (ent, *[ent[comp_type] for comp_type in component_types]) for ent in self.entities
+    )
+
+  __iter__ = __hash__ = None  # type: ignore
 
 
 class _Components:
@@ -139,6 +201,34 @@ class EntityManager:
           *[ComponentRemoved(entity, component) for component in entity]
         ])
 
+  def query(
+    self, /, *component_types: type, merge: Callable[..., set] = set.intersection
+  ) -> QueryResult:
+    """"""
+    if not component_types:
+      raise TypeError('expected at least one component type')
+    self_entities = self._entities
+    self_component_types = self._component_types
+    return QueryResult(
+      {
+        id: self_entities[id]
+        for id in merge(*[
+          self_component_types[typ]  # noqa: SIM401
+          if typ in self_component_types else set()
+          for typ in component_types
+        ])
+      },
+      component_types,
+      merge
+    )
+
+  def __call__(self, component_type: type, /) -> Iterator[Entity]:
+    """Return a generator of all entities in self that contain component_type."""
+    entities = self._entities
+    return (
+      entities[entity_id] for entity_id in self._component_types.get(component_type, ())
+    )
+
   def __getitem__(self, entity_id: EntityId, /) -> Entity:
     return self._entities[entity_id]
 
@@ -165,56 +255,6 @@ class EntityManager:
       return default
     self.remove(entity)
     return entity
-
-  def query(
-    self, /, *component_types: type, merge: Callable[..., set] = set.intersection
-  ) -> ComponentQueryResult:
-    """"""
-    return self._query(ComponentQueryResult, component_types, merge)
-
-  def entity_query(
-    self, /, *component_types: type, merge: Callable[..., set] = set.intersection
-  ) -> EntityQueryResult:
-    """"""
-    return self._query(EntityQueryResult, component_types, merge)
-
-  def id_query(
-    self, /, *component_types: type, merge: Callable[..., set] = set.intersection
-  ) -> IdQueryResult:
-    """"""
-    return self._query(IdQueryResult, component_types, merge)
-
-  def _query(
-    self,
-    result_cls: type[_Q],
-    component_types: tuple[type, ...],
-    merge: Callable[..., set] = set.intersection,
-    /
-  ) -> _Q:
-    """"""
-    if not component_types:
-      raise TypeError('expected at least one component type')
-    self_entities = self._entities
-    self_component_types = self._component_types
-    return result_cls(
-      {
-        id: self_entities[id]
-        for id in merge(*[
-          self_component_types[typ]  # noqa: SIM401
-          if typ in self_component_types else set()
-          for typ in component_types
-        ])
-      },
-      component_types,
-      merge
-    )
-
-  def __call__(self, component_type: type, /) -> Iterator[Entity]:
-    """Return a generator of all entities in self that contain component_type."""
-    entities = self._entities
-    return (
-      entities[entity_id] for entity_id in self._component_types.get(component_type, ())
-    )
 
   @overload
   def ids(self, /) -> KeysView[EntityId]: ...

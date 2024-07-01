@@ -3,8 +3,7 @@ __all__ = ['Space']
 from collections import deque
 from collections.abc import Callable
 
-from pyriak import EventQueue, managers
-from pyriak.query import ComponentQueryResult, EntityQueryResult, IdQueryResult
+from pyriak import EventQueue, QueryResult, managers
 
 
 class Space:
@@ -40,18 +39,8 @@ class Space:
 
   def query(
     self, /, *component_types: type, merge: Callable[..., set] = set.intersection
-  ) -> ComponentQueryResult:
+  ) -> QueryResult:
     return self.entities.query(*component_types, merge=merge)
-
-  def entity_query(
-    self, /, *component_types: type, merge: Callable[..., set] = set.intersection
-  ) -> EntityQueryResult:
-    return self.entities.entity_query(*component_types, merge=merge)
-
-  def id_query(
-    self, /, *component_types: type, merge: Callable[..., set] = set.intersection
-  ) -> IdQueryResult:
-    return self.entities.id_query(*component_types, merge=merge)
 
   def process(self, event: object) -> bool:
     return self.systems.process(event)
