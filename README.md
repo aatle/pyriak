@@ -83,13 +83,10 @@ Components can be created large and then later broken down into a batch of multi
 ## TO DO:
 - dynamic handlers?
 - 3.11 typing features
-- fix multibinding typing
-- system "new" method instantiation
 - `__future__.annotations`
 - type aliases
 - 'direct', 'indirect', 'strict', 'immediate' vocab docs
-- validate subclasses: hash, mro
-- sys mgr expose handlers + bind predicate/filter + _Binding public
+- sys mgr expose handlers + bind predicate/filter?
 - `__contains__` TypeError raise?
 - picklable `__setstate__ __getstate__ __copy__` classes
 - 'processor' game pump generator yield event method, 'event loop'
@@ -99,18 +96,13 @@ Components can be created large and then later broken down into a batch of multi
 - raise from None bad
 - views, items methods: mappingproxy
 - `__eq__`, remove `__hash__`: mgrs
-- types(*types) method functionality all mgrs+entity ?
 - entities from ids: itertools helpers in entitymgr
-- 'add', 'remove' methods return value
-- entity mgr garbage collection behavior (currently undefined?)
-- game `__call__` use ?
+- 'add', 'remove' methods return value?
 - more container (set) dunder methods, operations
 - copy methods
 - more positional only arguments
-- more system config
 - str and repr methods all
-- place documentation in code, along with all rules (style guide first)
+- place documentation in code, along with all rules
 - optimization through profiling, scalene (in a game)
 - make imported module variables private (consistency)
-- python version lower in poetry dependencies ? find min python version
 - review and rewrite readme.txt
