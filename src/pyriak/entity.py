@@ -152,7 +152,7 @@ class Entity:
       return self._components == other._components
     return NotImplemented
 
-  def clear(self):
+  def clear(self) -> None:
     """Remove all components from self."""
     self.remove(*self)
 

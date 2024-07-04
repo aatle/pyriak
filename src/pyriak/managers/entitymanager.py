@@ -291,7 +291,7 @@ class EntityManager:
       return obj.id in self._entities
     return obj in self._entities
 
-  def clear(self):
+  def clear(self) -> None:
     self.remove(*self)
 
   def _component_added(self, entity: Entity, component: object, /) -> None:

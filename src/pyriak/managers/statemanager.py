@@ -136,5 +136,5 @@ class StateManager:
           return True
     return False
 
-  def clear(self):
+  def clear(self) -> None:
     self.remove(*self)

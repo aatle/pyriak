@@ -182,7 +182,7 @@ class SystemManager:
     """Return whether obj is a system added to self (ignoring subclasses)."""
     return obj in self._systems
 
-  def clear(self):
+  def clear(self) -> None:
     """Remove all systems and event handlers from self.
 
     Does not trigger any events.
