@@ -62,7 +62,7 @@ class QueryResult:
     if not component_types:
       component_types = self.types
     return (
-      tuple(ent[comp_type] for comp_type in component_types) for ent in self.entities
+      tuple([ent[comp_type] for comp_type in component_types]) for ent in self.entities
     )
 
   @overload
@@ -119,7 +119,7 @@ class _Components:
       yield from reversed(entity)
 
   def __len__(self):
-    return sum(len(entity) for entity in self._manager()._entities.values())
+    return sum([len(entity) for entity in self._manager()])
 
   def __contains__(self, obj: object, /):
     types = self._manager()._component_types
@@ -268,10 +268,7 @@ class EntityManager:
     """
     if component_type is None:
       return self._entities.keys()
-    component_types = self._component_types
-    if component_type not in component_types:
-      return set()
-    return set(component_types[component_type])
+    return set(self._component_types.get(component_type, ()))
 
   def __iter__(self):
     """Return an iterator of all Entities in self.
