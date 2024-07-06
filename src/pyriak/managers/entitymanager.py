@@ -40,19 +40,8 @@ class QueryResult:
   def merge(self) -> Callable[..., set]:
     return self._merge
 
-  @overload
-  def __call__(self) -> Iterator[Any]: ...
-  @overload
-  def __call__(self, *component_types: type[_T]) -> Iterator[_T]: ...
-  def __call__(self, *component_types):
-    if not component_types:
-      component_types = self.types
-    return (comp for ent in self.entities for comp in ent(*component_types))
-
-  def __getitem__(self, component_type: type[_T], /) -> Iterator[_T]:
-    return (ent[component_type] for ent in self.entities)
-
-  #= get method?
+  def __call__(self, component_type: type[_T], /) -> Iterator[_T]:
+    return (entity[component_type] for entity in self.entities)
 
   @overload
   def zip(self) -> Iterator[tuple[Any, ...]]: ...
@@ -96,16 +85,9 @@ class _Components:
     manager = self._manager()
     entities = manager._entities
     return (
-      component
+      entities[entity_id][component_type]
       for entity_id in manager._component_types.get(component_type, ())
-      for component in entities[entity_id](component_type)
     )
-
-  def __getitem__(self, component_type: type[_T], /) -> Iterator[_T]:
-    manager = self._manager()
-    entities = manager._entities
-    return (entities[entity_id][component_type]
-            for entity_id in manager._component_types.get(component_type, ()))
 
   def types(self) -> KeysView[type]:
     return self._manager()._component_types.keys()
