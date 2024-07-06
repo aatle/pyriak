@@ -100,6 +100,7 @@ Components can be created large and then later broken down into a batch of multi
 - 'add', 'remove' methods return value?
 - more container (set) dunder methods, operations
 - copy methods
+- .has() method (for component, state, entity?)?
 - more positional only arguments
 - str and repr methods all
 - place documentation in code, along with all rules
