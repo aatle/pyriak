@@ -122,4 +122,4 @@ class Entity:
 
   @staticmethod
   def new_id() -> EntityId:
-    return uuid4().int  # type: ignore
+    return uuid4().int  # type: ignore[return-value]
