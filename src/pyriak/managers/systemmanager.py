@@ -179,7 +179,7 @@ class SystemManager:
     return len(self._systems)
 
   def __contains__(self, obj: object, /):
-    """Return whether obj is a system added to self (ignoring subclasses)."""
+    """Return whether obj is a system added to self."""
     return obj in self._systems
 
   def clear(self) -> None:
