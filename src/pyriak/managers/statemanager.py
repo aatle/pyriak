@@ -54,16 +54,12 @@ class StateManager:
         if other_state is state or other_state == state:
           del self_states[state_type]
           if event_queue is not None:
-            event_queue.append(StateRemoved(state))
+            event_queue.append(StateRemoved(other_state))
           continue
       raise ValueError(state)
 
   def __getitem__(self, state_type: type[_T], /) -> _T:
     return self._states[state_type]  # type: ignore[return-value]
-
-  def __setitem__(self, state_type: type[_T], state: _T, /):
-    self.pop(state_type, None)
-    self.add(state)
 
   def __delitem__(self, state_type: type, /):
     self.remove(self[state_type])

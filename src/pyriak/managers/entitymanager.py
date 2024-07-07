@@ -67,7 +67,7 @@ class QueryResult:
       (ent, *[ent[comp_type] for comp_type in component_types]) for ent in self.entities
     )
 
-  __iter__ = __hash__ = None  # type: ignore
+  __hash__ = None  # type: ignore[assignment]
 
 
 class _Components:
@@ -115,7 +115,7 @@ class EntityManager:
   ):
     self.event_queue = event_queue
     self.components = _Components()
-    self.components._manager = weakref(self)  # type: ignore
+    self.components._manager = weakref(self)  # type: ignore[assignment]
     self._entities: dict[EntityId, Entity] = {}
     self._component_types: dict[type, set[EntityId]] = {}
     self.add(*entities)

@@ -48,7 +48,7 @@ class Entity:
       This id can be used to weakly reference and store the entity.
   """
 
-  __slots__ = 'id', '_components', '_manager', '__weakref__'
+  __slots__ = 'id', '_components', '_manager'
 
   def __init__(self, components: Iterable[object] = (), /):
     """Initialize the entity with the given components.
@@ -133,16 +133,12 @@ class Entity:
         if other_component is component or other_component == component:
           del self_components[component_type]
           if manager is not None:
-            manager._component_removed(self, component)
+            manager._component_removed(self, other_component)
           continue
       raise ValueError(component)
 
   def __getitem__(self, component_type: type[_T], /) -> _T:
     return self._components[component_type]  # type: ignore[return-value]
-
-  def __setitem__(self, component_type: type[_T], component: _T, /):
-    self.pop(component_type, None)
-    self.add(component)
 
   def __delitem__(self, component_type: type, /):
     self.remove(self[component_type])
@@ -208,4 +204,4 @@ class Entity:
     Returns:
       A unique integer.
     """
-    return uuid4().int  # type: ignore
+    return uuid4().int  # type: ignore[return-value]
