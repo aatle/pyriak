@@ -272,26 +272,24 @@ class SystemManager:
     try:
       handlers = self._handlers[event_type]
     except KeyError:
-      handlers = self._lazy_bind(event_type)
-      if event_type not in key_functions:
-        return handlers
-      key_handlers = self._lazy_key_bind(event_type)
-    else:
-      if event_type not in self._key_handlers:
-        return handlers
+      return []
+    if event_type not in key_functions:
+      return handlers
+    try:
       key_handlers = self._key_handlers[event_type]
+    except KeyError:
+      # A key function was added late
+      self._key_handlers[event_type] = {}
+      return handlers
     key = key_functions[event_type](event)
     if not isinstance(key, Iterator):
-      try:
-        return key_handlers[key]
-      except KeyError:
-        return handlers
+      return key_handlers.get(key, handlers)
     keys = {k for k in key if k in key_handlers}
     if len(keys) > 1:
-      return self._sort_handlers(handler for key in keys for handler in key_handlers[key])
-    if keys:
-      return key_handlers[keys.pop()]
-    return handlers
+      return self._sort_handlers(
+        [handler for key in keys for handler in key_handlers[key]]
+      )
+    return key_handlers.get(keys.pop(), handlers) if keys else handlers
 
   @staticmethod
   def _get_bindings(system: System):
