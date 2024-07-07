@@ -23,7 +23,7 @@
 
 """Pyriak is a framework for ECS architecture.
 
-This implementation integrates the concepts of event handling and polymorphism.
+This implementation also implements event-driven architecture.
 The package is written in pure python and has no dependencies.
 
 This module is the top-level module of the package and contains
@@ -33,13 +33,10 @@ most of the things necessary to use this package.
 __all__ = [
   'bind',
   'Space',
-  'Query',
   'Entity',
   'EntityId',
   'System',
   'EventQueue',
-  'subclasses',
-  'strict_subclasses',
   'key_functions',
   'set_key',
   'tagclass',
@@ -47,7 +44,6 @@ __all__ = [
 ]
 
 from collections.abc import (
-  Generator as _Generator,
   Hashable as _Hashable,
   MutableSequence as _MutableSequence,
 )
@@ -72,63 +68,6 @@ EventQueue: _TypeAlias = _MutableSequence[object]
 
 
 dead_weakref: _weakref[_Any] = _weakref(set())
-
-
-_get_subclasses = type.__subclasses__
-
-def subclasses(cls: _TypeT, /) -> _Generator[_TypeT, None, _TypeT]:
-  """Return a generator yielding the class and all of its subclasses.
-
-  The class itself is yielded first, and then its subclasses,
-  direct or indirect. The yielded classes satisfy issubclass(ret, cls).
-  Virtual subclasses are not returned.
-
-  The order the classes are returned is a depth-first search of the
-  'inheritance tree'. If there is a cycle due to multiple inheritance,
-  a class may be yielded more than once.
-
-  This function uses type.__subclasses__() method, ignoring any overrides.
-
-  The generator returns the cls passed in.
-  (This value is accessible through the StopIteration that is raised).
-
-  Args:
-    cls: The class object whose subclasses will be returned.
-
-  Returns:
-    A generator of classes, including cls, each of which is a subclass of cls.
-  """
-  yield cls
-  get_subclasses = _get_subclasses
-  stack = get_subclasses(cls)
-  pop = stack.pop
-  while stack:
-    subclass = pop()
-    yield subclass
-    stack += get_subclasses(subclass)
-  return cls
-
-
-def strict_subclasses(cls: _TypeT, /) -> _Generator[_TypeT, None, _TypeT]:
-  """Return a generator yielding all of cls's subclasses, excluding cls itself.
-
-  This function is exactly the same as subclasses() except that it does not
-  yield cls as the first value.
-
-  Args:
-    cls: The class object whose subclasses will be returned.
-
-  Returns:
-    A generator of classes, excluding cls, each of which is a subclass of cls.
-  """
-  get_subclasses = _get_subclasses
-  stack = get_subclasses(cls)
-  pop = stack.pop
-  while stack:
-    subclass = pop()
-    yield subclass
-    stack += get_subclasses(subclass)
-  return cls
 
 
 def tagclass(cls: type) -> type:
@@ -171,7 +110,7 @@ def tagclass(cls: type) -> type:
   return cls
 
 
-def first(arg: _T, *args: _Any) -> _T:  # noqa: ARG001
+def first(arg: _T, /, *args: _Any) -> _T:  # noqa: ARG001
   """Return the first argument passed in.
 
   In an EntityManager query with multiple types, it is often useful for the
@@ -203,7 +142,7 @@ _SENTINEL: _Sentinel = _Sentinel.SENTINEL
 from pyriak.bind import bind  # noqa: E402
 from pyriak.entity import Entity, EntityId  # noqa: E402
 from pyriak.eventkey import key_functions, set_key  # noqa: E402
-from pyriak.query import Query  # noqa: E402
+from pyriak.managers.entitymanager import QueryResult as QueryResult  # noqa: E402
 from pyriak.space import Space  # noqa: E402
 
 

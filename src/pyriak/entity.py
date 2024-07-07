@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from typing import TYPE_CHECKING, NewType, TypeVar, overload
 from uuid import uuid4
 
-from pyriak import _SENTINEL, dead_weakref, strict_subclasses, subclasses
+from pyriak import _SENTINEL, dead_weakref
 
 
 if TYPE_CHECKING:
@@ -67,25 +67,8 @@ class Entity:
           continue
       raise ValueError(component)
 
-  def __call__(self, *component_types: type[_T]) -> list[_T]:
-    components = self._components
-    return [
-      components[component_type]  # type: ignore
-      for component_type in {
-        comp_type: None for cls in component_types for comp_type in subclasses(cls)
-      }  # dict instead of set to guarantee stable ordering while still removing dupes
-      if component_type in components
-    ]
-
   def __getitem__(self, component_type: type[_T], /) -> _T:
-    try:
-      return self._components[component_type]  # type: ignore[return-value]
-    except KeyError:
-      components = self._components
-      for cls in strict_subclasses(component_type):
-        if cls in components:
-          return components[cls]  # type: ignore[return-value]
-      raise
+    return self._components[component_type]  # type: ignore[return-value]
 
   def __setitem__(self, component_type: type[_T], component: _T, /):
     self.pop(component_type, None)
@@ -99,15 +82,7 @@ class Entity:
   @overload
   def get(self, component_type: type[_T], default: _D, /) -> _T | _D: ...
   def get(self, component_type, default=None, /):
-    try:
-      return self._components[component_type]
-    except KeyError:
-      pass
-    components = self._components
-    for cls in strict_subclasses(component_type):
-      if cls in components:
-        return components[cls]
-    return default
+    return self._components.get(component_type, default)
 
   @overload
   def pop(self, component_type: type[_T], /) -> _T: ...
@@ -115,7 +90,7 @@ class Entity:
   def pop(self, component_type: type[_T], default: _D, /) -> _T | _D: ...
   def pop(self, component_type, default=_SENTINEL, /):
     try:
-      component = self[component_type]
+      component = self._components[component_type]
     except KeyError:
       if default is _SENTINEL:
         raise
@@ -136,14 +111,7 @@ class Entity:
     return len(self._components)
 
   def __contains__(self, obj: object, /):
-    if obj in self._components:
-      return True
-    if isinstance(obj, type):
-      components = self._components
-      for cls in strict_subclasses(obj):
-        if cls in components:
-          return True
-    return False
+    return obj in self._components
 
   def __eq__(self, other: object, /):
     if self is other:
@@ -152,7 +120,7 @@ class Entity:
       return self._components == other._components
     return NotImplemented
 
-  def clear(self):
+  def clear(self) -> None:
     """Remove all components from self."""
     self.remove(*self)
 

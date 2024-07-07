@@ -3,7 +3,7 @@ __all__ = ['StateManager']
 from collections.abc import Iterable
 from typing import TypeVar, overload
 
-from pyriak import _SENTINEL, EventQueue, strict_subclasses, subclasses
+from pyriak import _SENTINEL, EventQueue
 from pyriak.events import StateAdded, StateRemoved
 
 
@@ -58,25 +58,8 @@ class StateManager:
           continue
       raise ValueError(state)
 
-  def __call__(self, *state_types: type[_T]) -> list[_T]:
-    states = self._states
-    return [
-      states[state_type]  # type: ignore
-      for state_type in {
-        state_type: None for cls in state_types for state_type in subclasses(cls)
-      }  # dict instead of set to guarantee stable ordering while still removing dupes
-      if state_type in states
-    ]
-
   def __getitem__(self, state_type: type[_T], /) -> _T:
-    try:
-      return self._states[state_type]  # type: ignore[return-value]
-    except KeyError:
-      states = self._states
-      for cls in strict_subclasses(state_type):
-        if cls in states:
-          return states[cls]  # type: ignore[return-value]
-      raise
+    return self._states[state_type]  # type: ignore[return-value]
 
   def __setitem__(self, state_type: type[_T], state: _T, /):
     self.pop(state_type, None)
@@ -90,15 +73,7 @@ class StateManager:
   @overload
   def get(self, state_type: type[_T], default: _D, /) -> _T | _D: ...
   def get(self, state_type, default=None, /):
-    try:
-      return self._states[state_type]
-    except KeyError:
-      pass
-    states = self._states
-    for cls in strict_subclasses(state_type):
-      if cls in states:
-        return states[cls]
-    return default
+    return self._states.get(state_type, default)
 
   @overload
   def pop(self, state_type: type[_T], /) -> _T: ...
@@ -127,14 +102,7 @@ class StateManager:
     return len(self._states)
 
   def __contains__(self, obj: object, /):
-    if obj in self._states:
-      return True
-    if isinstance(obj, type):
-      states = self._states
-      for cls in strict_subclasses(obj):
-        if cls in states:
-          return True
-    return False
+    return obj in self._states
 
-  def clear(self):
+  def clear(self) -> None:
     self.remove(*self)

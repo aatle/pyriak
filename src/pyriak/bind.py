@@ -28,6 +28,9 @@ _S = TypeVar('_S')
 _Callback: TypeAlias = Callable[['Space', _T], _R]
 
 
+_empty_frozenset: frozenset[object] = frozenset()
+
+
 class Binding(NamedTuple):
   """A Binding holds info from one call to bind().
 
@@ -145,8 +148,8 @@ def bind(event_type, priority, /, *, key=_SENTINEL, keys=_SENTINEL):
       raise TypeError("bind() cannot be passed both 'key' and 'keys' kwargs")
     keys = frozenset([key])
   else:
-    keys = frozenset(keys) if keys is not _SENTINEL else frozenset()
-  if keys and not key_functions.exists(event_type):
+    keys = frozenset(keys) if keys is not _SENTINEL else _empty_frozenset
+  if keys and event_type not in key_functions:
     raise ValueError(
       f'bind(): keys were provided but no key function exists for {event_type!r}'
     )

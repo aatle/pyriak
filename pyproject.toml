@@ -1,13 +1,13 @@
 [tool.poetry]
 name = "pyriak"
-version = "0.3.0"
+version = "0.3.1"
 description = "A lightweight implementation of Entity Component System architecture"
 authors = ["aatle <168398276+aatle@users.noreply.github.com>"]
 license = "MIT"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = ">=3.10"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.4.4"
