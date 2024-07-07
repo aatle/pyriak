@@ -96,7 +96,7 @@ def bind(event_type, priority, /, *, key=_SENTINEL, keys=_SENTINEL):
     keys = frozenset([key])
   else:
     keys = frozenset(keys) if keys is not _SENTINEL else _empty_frozenset
-  if keys and not key_functions.exists(event_type):
+  if keys and event_type not in key_functions:
     raise ValueError(
       f'bind(): keys were provided but no key function exists for {event_type!r}'
     )

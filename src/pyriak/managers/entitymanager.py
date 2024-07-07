@@ -4,7 +4,7 @@ from collections.abc import Collection, Iterable, Iterator, KeysView, Set as Abs
 from typing import Any, Callable, TypeVar, overload
 from weakref import ref as weakref
 
-from pyriak import _SENTINEL, EventQueue, dead_weakref, subclasses
+from pyriak import _SENTINEL, EventQueue, dead_weakref
 from pyriak.entity import Entity, EntityId
 from pyriak.events import ComponentAdded, ComponentRemoved, EntityAdded, EntityRemoved
 
@@ -40,19 +40,8 @@ class QueryResult:
   def merge(self) -> Callable[..., set]:
     return self._merge
 
-  @overload
-  def __call__(self) -> Iterator[Any]: ...
-  @overload
-  def __call__(self, *component_types: type[_T]) -> Iterator[_T]: ...
-  def __call__(self, *component_types):
-    if not component_types:
-      component_types = self.types
-    return (comp for ent in self.entities for comp in ent(*component_types))
-
-  def __getitem__(self, component_type: type[_T], /) -> Iterator[_T]:
-    return (ent[component_type] for ent in self.entities)
-
-  #= get method?
+  def __call__(self, component_type: type[_T], /) -> Iterator[_T]:
+    return (entity[component_type] for entity in self.entities)
 
   @overload
   def zip(self) -> Iterator[tuple[Any, ...]]: ...
@@ -96,16 +85,9 @@ class _Components:
     manager = self._manager()
     entities = manager._entities
     return (
-      component
+      entities[entity_id][component_type]
       for entity_id in manager._component_types.get(component_type, ())
-      for component in entities[entity_id](component_type)
     )
-
-  def __getitem__(self, component_type: type[_T], /) -> Iterator[_T]:
-    manager = self._manager()
-    entities = manager._entities
-    return (entities[entity_id][component_type]
-            for entity_id in manager._component_types.get(component_type, ()))
 
   def types(self) -> KeysView[type]:
     return self._manager()._component_types.keys()
@@ -122,12 +104,7 @@ class _Components:
     return sum([len(entity) for entity in self._manager()])
 
   def __contains__(self, obj: object, /):
-    types = self._manager()._component_types
-    if isinstance(obj, type):
-      for cls in subclasses(obj):
-        if cls in types:
-          return True
-    return False
+    return obj in self._manager()._component_types
 
 
 class EntityManager:
@@ -156,9 +133,7 @@ class EntityManager:
         raise RuntimeError(f'{entity!r} already added to another manager')
       self_entities[entity_id] = entity
       entity._manager = self_weakref
-      for component_type in {
-        component_type for cls in entity.types() for component_type in cls.__mro__
-      }:
+      for component_type in entity.types():
         try:
           component_types[component_type].add(entity_id)
         except KeyError:
@@ -188,9 +163,7 @@ class EntityManager:
       except KeyError:
         raise ValueError(entity) from None
       entity._manager = dead_weakref
-      for component_type in {
-        component_type for cls in entity.types() for component_type in cls.__mro__
-      }:
+      for component_type in entity.types():
         component_type_entities = component_types[component_type]
         component_type_entities.remove(entity_id)
         if not component_type_entities:
@@ -292,27 +265,19 @@ class EntityManager:
     self.remove(*self)
 
   def _component_added(self, entity: Entity, component: object, /) -> None:
-    component_types = self._component_types
-    entity_id = entity.id
-    for component_type in type(component).__mro__:
-      try:
-        component_types[component_type].add(entity_id)
-      except KeyError:
-        component_types[component_type] = {entity_id}
+    try:
+      self._component_types[type(component)].add(entity.id)
+    except KeyError:
+      self._component_types[type(component)] = {entity.id}
     event_queue = self.event_queue
     if event_queue is not None:
       event_queue.append(ComponentAdded(entity, component))
 
   def _component_removed(self, entity: Entity, component: object, /) -> None:
-    component_types = self._component_types
-    entity_id = entity.id
-    for component_type in type(component).__mro__:
-      if component_type in entity:
-        continue
-      entity_ids = component_types[component_type]
-      entity_ids.remove(entity_id)
-      if not entity_ids:
-        del component_types[component_type]
+    entity_ids = self._component_types[type(component)]
+    entity_ids.remove(entity.id)
+    if not entity_ids:
+      del self._component_types[type(component)]
     event_queue = self.event_queue
     if event_queue is not None:
       event_queue.append(ComponentRemoved(entity, component))

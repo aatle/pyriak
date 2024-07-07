@@ -11,10 +11,9 @@ __all__ = [
   'StateRemoved',
 ]
 
-from collections.abc import Hashable, Iterator
+from collections.abc import Hashable
 from typing import TYPE_CHECKING, Any
 
-from pyriak import subclasses as _subclasses
 from pyriak.eventkey import set_key as _set_key
 
 
@@ -34,8 +33,8 @@ class EntityRemoved:
     self.entity = entity
 
 
-def _component_type_key(event: 'ComponentAdded | ComponentRemoved') -> Iterator[type]:
-  yield from type(event.component).__mro__
+def _component_type_key(event: 'ComponentAdded | ComponentRemoved') -> type:
+  return type(event.component)
 
 @_set_key(_component_type_key)
 class ComponentAdded:
@@ -64,8 +63,8 @@ class SystemRemoved:
     self.system = system
 
 
-def _state_type_key(event: 'StateAdded | StateRemoved') -> Iterator[type]:
-  yield from type(event.state).__mro__
+def _state_type_key(event: 'StateAdded | StateRemoved') -> type:
+  return type(event.state)
 
 @_set_key(_state_type_key)
 class StateAdded:
@@ -78,8 +77,8 @@ class StateRemoved:
     self.state = state
 
 
-def _handler_key(event: 'EventHandlerAdded | EventHandlerRemoved') -> Iterator[type]:
-  yield from _subclasses(event.event_type)
+def _handler_key(event: 'EventHandlerAdded | EventHandlerRemoved') -> type:
+  return event.event_type
 
 @_set_key(_handler_key)
 class EventHandlerAdded:
