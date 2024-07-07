@@ -134,7 +134,7 @@ def tagclass(cls: type) -> type:
   return cls
 
 
-def first(arg: _T, *args: _Any) -> _T:  # noqa: ARG001
+def first(arg: _T, /, *args: _Any) -> _T:  # noqa: ARG001
   return arg
 
 
