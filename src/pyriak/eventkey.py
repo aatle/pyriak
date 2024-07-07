@@ -4,8 +4,6 @@ from collections.abc import Callable, Hashable, Iterator, Mapping
 from typing import Any, TypeAlias, TypeVar, overload
 from weakref import WeakKeyDictionary
 
-from pyriak import _SENTINEL
-
 
 _T = TypeVar('_T')
 _D = TypeVar('_D')
@@ -24,47 +22,18 @@ class EventKeyFunctions:
   __slots__ = ('_data',)
 
   def __init__(
-    self, dict: Mapping[type, KeyFunction[Any] | None] | None = None
+    self, dict: Mapping[type, KeyFunction[Any]] | None = None
   ):
-    self._data: WeakKeyDictionary[type, KeyFunction[Any] | None]
+    self._data: WeakKeyDictionary[type, KeyFunction[Any]]
     self._data = WeakKeyDictionary()
     if dict is not None:
       self.update(dict)
 
-  @overload
-  def __call__(self, event_type: type[_T]) -> KeyFunction[_T]: ...
-  @overload
-  def __call__(self, event_type: type[_T], default: _D) -> KeyFunction[_T] | _D: ...
-  def __call__(self, event_type, default=_SENTINEL):
-    """Return the key function for event_type.
-
-    A key function is used to extract a key from an event of type event_type.
-
-    Each type in the event_type's method resolution order (__mro__) is checked until
-    a specific key function is found and is not None,
-    in which case the key function is returned.
-    If no key function is found that is not None, default is returned if it is provided,
-    otherwise a KeyError is raised.
-    This is the only method that considers superclasses, other than the exists method.
-    """
-    get = self._data.get
-    for cls in event_type.__mro__:
-      key_function = get(cls)
-      if key_function is not None:
-        return key_function
-    if default is _SENTINEL:
-      raise KeyError(event_type)
-    return default
-
-  def exists(self, event_type: type) -> bool:
-    """Return True if there is a key function for event_type that is not None."""
-    return self(event_type, None) is not None
-
-  def __getitem__(self, event_type: type[_T]) -> KeyFunction[_T] | None:
-    """Return the specific key function for an event_type, ignoring superclasses."""
+  def __getitem__(self, event_type: type[_T]) -> KeyFunction[_T]:
+    """Return the key function for an event_type."""
     return self._data[event_type]
 
-  def __setitem__(self, event_type: type[_T], key: KeyFunction[_T] | None):
+  def __setitem__(self, event_type: type[_T], key: KeyFunction[_T]):
     data = self._data
     if event_type in data:
       raise KeyError(f'cannot reassign event type key: {event_type!r}')
@@ -75,21 +44,18 @@ class EventKeyFunctions:
   @overload
   def get(self, event_type: type[_T], default: _D) -> KeyFunction[_T] | _D: ...
   def get(self, event_type, default=None):
-    try:
-      return self._data[event_type]
-    except KeyError:
-      return default
+    return self._data.get(event_type, default)
 
   def setdefault(
-    self, event_type: type[_T], default: KeyFunction[_T] | None = None
-  ) -> KeyFunction[_T] | None:
+    self, event_type: type[_T], default: KeyFunction[_T]
+  ) -> KeyFunction[_T]:
     data = self._data
     if event_type in data:
       return data[event_type]
-    self[event_type] = default
+    data[event_type] = default
     return default
 
-  def update(self, other: Mapping[type, KeyFunction[Any] | None]) -> None:
+  def update(self, other: Mapping[type, KeyFunction[Any]]) -> None:
     for event_type, key in dict(other).items():
       self[event_type] = key
 
@@ -111,13 +77,13 @@ class EventKeyFunctions:
   def __iter__(self):
     return iter(self._data)
 
-  def __or__(self, other: Mapping[type, KeyFunction[Any] | None]):
+  def __or__(self, other: Mapping[type, KeyFunction[Any]]):
     return self._data | other
 
-  def __ror__(self, other: Mapping[type, KeyFunction[Any] | None]):
+  def __ror__(self, other: Mapping[type, KeyFunction[Any]]):
     return other | self._data
 
-  def __ior__(self, other: Mapping[type, KeyFunction[Any] | None]):
+  def __ior__(self, other: Mapping[type, KeyFunction[Any]]):
     self.update(other)
     return self
 
@@ -129,10 +95,9 @@ class EventKeyFunctions:
 
 
 key_functions = EventKeyFunctions()
-key_functions[object] = None
 
 
-def set_key(key: KeyFunction[_T] | None, /) -> Callable[[type[_T]], type[_T]]:
+def set_key(key: KeyFunction[_T], /) -> Callable[[type[_T]], type[_T]]:
   """Assign a key function (permanently) to an event type.
 
   Convenience decorator to assign a key function (or None) to an event class definition.

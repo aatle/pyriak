@@ -273,14 +273,14 @@ class SystemManager:
       handlers = self._handlers[event_type]
     except KeyError:
       handlers = self._lazy_bind(event_type)
-      if not key_functions.exists(event_type):
+      if event_type not in key_functions:
         return handlers
       key_handlers = self._lazy_key_bind(event_type)
     else:
       if event_type not in self._key_handlers:
         return handlers
       key_handlers = self._key_handlers[event_type]
-    key = key_functions(event_type)(event)
+    key = key_functions[event_type](event)
     if not isinstance(key, Iterator):
       try:
         return key_handlers[key]
@@ -339,7 +339,7 @@ class SystemManager:
         }
         key_event_types = event_handlers.keys() & all_key_handlers
         event_handlers[event_type] = handler
-        if key_functions.exists(event_type):
+        if event_type in key_functions:
           key_event_types.add(event_type)
         handler_keys: dict[type, Mapping[Hashable, _EventHandler]] = (
           fromkeys(key_event_types, fromkeys(binding_keys, handler))
@@ -388,7 +388,7 @@ class SystemManager:
             raise RuntimeError
         handler_keys = {}
         key_event_types = event_handlers.keys() & all_key_handlers
-        key_event_types |= {ev_t for ev_t in event_types if key_functions.exists(ev_t)}
+        key_event_types |= {ev_t for ev_t in event_types if ev_t in key_functions}
         for cls in key_event_types:
           inherit_handler_keys: dict[Hashable, _EventHandler] = {}
           total_len = 0
