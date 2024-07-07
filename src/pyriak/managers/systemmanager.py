@@ -324,27 +324,32 @@ class SystemManager:
         keys = binding.keys
         handler = _EventHandler(system, callback, name, binding.priority)
         events.append(EventHandlerAdded(handler, event_type, keys))
-        if event_type in all_handlers:
-          insert_handler(all_handlers[event_type], handler)
-        else:
-          all_handlers[event_type] = [handler]
-        if event_type not in key_functions:
+        if not keys:
+          try:
+            insert_handler(all_handlers[event_type], handler)
+          except KeyError:
+            all_handlers[event_type] = [handler]
+          if event_type in key_functions:
+            try:
+              for handlers in all_key_handlers[event_type].values():
+                insert_handler(handlers, handler)
+            except KeyError:
+              all_key_handlers[event_type] = {}
           continue
-        if event_type not in all_key_handlers:
+        try:
           handlers = all_handlers[event_type]
+        except KeyError:
+          handlers = all_handlers[event_type] = []
+        if event_type not in all_key_handlers:
+          handlers = handlers[:]
+          insert_handler(handlers, handler)
           all_key_handlers[event_type] = {key: handlers[:] for key in keys}
           continue
         key_handlers = all_key_handlers[event_type]
-        if not keys:
-          for handlers in key_handlers.values():
-            insert_handler(handlers, handler)
-          continue
-        handlers = all_handlers[event_type]
         for key in keys:
-          if key in key_handlers:
-            insert_handler(key_handlers[key], handler)
-          else:
+          if key not in key_handlers:
             key_handlers[key] = handlers[:]
+          insert_handler(key_handlers[key], handler)
     return events
 
   def _unbind(self, system: System, /) -> list[EventHandlerRemoved]:
