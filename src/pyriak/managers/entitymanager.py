@@ -67,7 +67,7 @@ class QueryResult:
       (ent, *[ent[comp_type] for comp_type in component_types]) for ent in self.entities
     )
 
-  __iter__ = __hash__ = None  # type: ignore[assignment]
+  __hash__ = None  # type: ignore[assignment]
 
 
 class _Components:
