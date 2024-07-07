@@ -1,12 +1,12 @@
 __all__ = ['SystemManager']
 
-from collections.abc import Hashable, Iterable, Iterator, Mapping
+from collections.abc import Hashable, Iterable, Iterator
 from inspect import getattr_static
 from types import ModuleType
 from typing import TYPE_CHECKING, Any, NamedTuple
 from weakref import ref as weakref
 
-from pyriak import EventQueue, System, dead_weakref, strict_subclasses, subclasses
+from pyriak import EventQueue, System, dead_weakref
 from pyriak.bind import BindingWrapper, _Callback
 from pyriak.eventkey import key_functions
 from pyriak.events import (
@@ -311,168 +311,42 @@ class SystemManager:
   def _bind(self, system: System, /) -> list[EventHandlerAdded]:
     """Bind a system's handlers so that they can process events.
 
-    If a specified event type does not exist, _lazy_bind is called to find
-    bindings for it based on existing superclasses.
-
     Bindings of an event type are sorted by highest priority,
     then oldest system, then first one bound in system.
     """
-    system_bindings = self._get_bindings(system)
-    if not system_bindings:
-      return []
-    fromkeys = dict.fromkeys
-    handler_events: list[EventHandlerAdded] = []
     all_handlers = self._handlers
     all_key_handlers = self._key_handlers
     insert_handler = self._insert_handler
-    for name, bindings, callback in system_bindings:
-      if len(bindings) == 1:
-        # the common case of only one event type for a handler (single @bind())
-        binding = bindings[0]
+    events: list[EventHandlerAdded] = []
+    for name, bindings, callback in self._get_bindings(system):
+      for binding in bindings:
         event_type = binding.event_type
+        keys = binding.keys
         handler = _EventHandler(system, callback, name, binding.priority)
-        binding_keys = binding.keys
-        event_handlers = {
-          cls: handler for cls in strict_subclasses(event_type) if cls in all_handlers
-        }
-        key_event_types = event_handlers.keys() & all_key_handlers
-        event_handlers[event_type] = handler
-        if event_type in key_functions:
-          key_event_types.add(event_type)
-        handler_keys: dict[type, Mapping[Hashable, _EventHandler]] = (
-          fromkeys(key_event_types, fromkeys(binding_keys, handler))
-          if binding_keys else {}
-        )
-        handler_events.append(EventHandlerAdded(handler, event_type, binding_keys))
-      else:
-        event_handlers = {}
-        base_handler_keys: dict[type, Mapping[Hashable, _EventHandler]] = {}
-        cached_handlers: dict[int, _EventHandler] = {}
-        for binding in bindings:
-          event_type = binding.event_type
-          priority = binding.priority
-          binding_keys = binding.keys
-          priority_id = id(priority)
-          if priority_id in cached_handlers:
-            handler = cached_handlers[priority_id]
-          else:
-            handler = cached_handlers[priority_id] = _EventHandler(
-              system, callback, name, priority
-            )
-          event_handlers[event_type] = handler
-          if binding_keys:
-            base_handler_keys[event_type] = fromkeys(binding_keys, handler)
-          handler_events.append(EventHandlerAdded(handler, event_type, binding_keys))
-        del cached_handlers
-        # Subclasses of bound event types may also trigger the event handler,
-        # and will inherit their binding (keys and priority).
-        # In the rare case that a class is the subclass of multiple bound
-        # event types, the subclass will try to inherit the bindings of all,
-        # but the first bound type in its MRO will take precedence
-        # for shared keys (or when the subclass is keyless).
-        # A bound event type may be the subclass of other bound event types.
-        event_types = set(event_handlers)
-        for cls in {
-          cls
-          for event_type in event_types
-          for cls in strict_subclasses(event_type)
-          if cls in all_handlers
-        }:
-          for base in cls.__mro__:
-            if base in event_types:
-              event_handlers[cls] = event_handlers[base]
-              break
-          else:
-            raise RuntimeError
-        handler_keys = {}
-        key_event_types = event_handlers.keys() & all_key_handlers
-        key_event_types |= {ev_t for ev_t in event_types if ev_t in key_functions}
-        for cls in key_event_types:
-          inherit_handler_keys: dict[Hashable, _EventHandler] = {}
-          total_len = 0
-          for base in reversed(cls.__mro__):
-            if base in base_handler_keys:
-              inherit_base_keys = base_handler_keys[base]
-              inherit_handler_keys.update(inherit_base_keys)
-              total_len += len(inherit_base_keys)
-          if total_len != len(inherit_handler_keys):
-            # When inheriting multiple of the same key,
-            # the key object of the first type in the MRO is kept
-            inherit_handler_keys = {
-              key: inherit_handler_keys[key]
-              for base in cls.__mro__ for key in base_handler_keys.get(base, ())
-            }
-          handler_keys[cls] = inherit_handler_keys
-
-      for event_type, handler in event_handlers.items():
-        handlers = (
-          all_handlers[event_type] if event_type in all_handlers
-          else self._lazy_bind(event_type)
-        )
-        if event_type not in key_event_types:
-          insert_handler(handlers, handler)
-          continue
-        key_handlers = (
-          all_key_handlers[event_type] if event_type in all_key_handlers
-          else self._lazy_key_bind(event_type)
-        )
-        keys = handler_keys.get(event_type, {})
-        if not keys:
-          insert_handler(handlers, handler)
-          for handlers in key_handlers.values():
-            insert_handler(handlers, handler)
-          continue
-        for key, handler in keys.items():
-          if key not in key_handlers:
-            key_handlers[key] = handlers[:]
-          insert_handler(key_handlers[key], handler)
-    return handler_events
-
-  def _lazy_bind(self, event_type: type, /) -> list[_EventHandler]:
-    """Find bindings for event_type and bind them and return the handlers.
-
-    Subclass instances of an event_type can be processed by superclass handlers.
-    These subclasses are only bound when a subclass is processed. Hence, lazy binding.
-    """
-    all_handlers = self._handlers
-    event_handlers = [
-      handler
-      for ev_t in event_type.__mro__
-      if ev_t in all_handlers
-      for handler in all_handlers[ev_t]
-    ]
-    if event_handlers:
-      event_handlers = self._sort_handlers(event_handlers)
-    all_handlers[event_type] = event_handlers
-    return event_handlers
-
-  def _lazy_key_bind(
-    self, event_type: type, /
-  ) -> dict[Hashable, list[_EventHandler]]:
-    all_key_handlers = self._key_handlers
-    inherit_key_handlers = [
-      item
-      for ev_t in event_type.__mro__
-      if ev_t in all_key_handlers
-      for item in all_key_handlers[ev_t].items()
-    ]
-    if inherit_key_handlers:
-      unsorted_handlers: dict[Hashable, list[list[_EventHandler]]] = {}
-      base_handlers = self._handlers[event_type]
-      for key, handlers in inherit_key_handlers:
-        if key in unsorted_handlers:
-          unsorted_handlers[key].append(handlers)
+        events.append(EventHandlerAdded(handler, event_type, keys))
+        if event_type in all_handlers:
+          insert_handler(all_handlers[event_type], handler)
         else:
-          unsorted_handlers[key] = [base_handlers, handlers]
-      sort_handlers = self._sort_handlers
-      key_handlers: dict[Hashable, list[_EventHandler]] = {
-        key: sort_handlers(handler for handlers in handlers_list for handler in handlers)
-        for key, handlers_list in unsorted_handlers.items()
-      }
-    else:
-      key_handlers = {}
-    all_key_handlers[event_type] = key_handlers
-    return key_handlers
+          all_handlers[event_type] = [handler]
+        if event_type not in key_functions:
+          continue
+        if event_type not in all_key_handlers:
+          if not keys:
+            all_key_handlers[event_type] = {}
+            continue
+          handlers = all_handlers[event_type]
+          all_key_handlers[event_type] = {key: handlers[:] for key in keys}
+        elif keys:
+          key_handlers = all_key_handlers[event_type]
+          handlers = all_handlers[event_type]
+          for key in keys:
+            if key not in key_handlers:
+              key_handlers[key] = handlers[:]
+            insert_handler(key_handlers[key], handler)
+          continue
+        for handlers in all_key_handlers[event_type].values():
+          insert_handler(handlers, handler)
+    return events
 
   def _unbind(self, system: System, /) -> list[EventHandlerRemoved]:
     """Remove all handlers that belong to system from self.
@@ -480,34 +354,30 @@ class SystemManager:
     If an event type no longer has any handlers, it is removed.
     This also applies to keys with handlers.
     """
-    events: list[EventHandlerRemoved] = []
     all_handlers = self._handlers
     all_key_handlers = self._key_handlers
+    events: list[EventHandlerRemoved] = []
     for name, bindings, callback in self._get_bindings(system):
       for binding in bindings:
-        cls = binding.event_type
-        for event_type in subclasses(cls):
-          try:
-            handlers = all_handlers[event_type]
-          except KeyError:
-            continue
+        event_type = binding.event_type
+        handlers = all_handlers[event_type]
+        handlers[:] = [
+          handler for handler in handlers if handler.system != system
+        ]
+        if not handlers:
+          del all_handlers[event_type]
+        if event_type not in all_key_handlers:
+          continue
+        key_handlers = all_key_handlers[event_type]
+        for key, handlers in key_handlers.items():
           handlers[:] = [
             handler for handler in handlers if handler.system != system
           ]
           if not handlers:
-            del all_handlers[event_type]
-          if event_type not in all_key_handlers:
-            continue
-          key_handlers = all_key_handlers[event_type]
-          for key, handlers in key_handlers.items():
-            handlers[:] = [
-              handler for handler in handlers if handler.system != system
-            ]
-            if not handlers:
-              del key_handlers[key]
-          if not key_handlers:
-            del all_key_handlers[event_type]
+            del key_handlers[key]
+        if not key_handlers:
+          del all_key_handlers[event_type]
         events.append(EventHandlerRemoved(
-          system, callback, name, binding.priority, cls, binding.keys
+          system, callback, name, binding.priority, event_type, binding.keys
         ))
     return events
