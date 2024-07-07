@@ -70,10 +70,6 @@ class Entity:
   def __getitem__(self, component_type: type[_T], /) -> _T:
     return self._components[component_type]  # type: ignore[return-value]
 
-  def __setitem__(self, component_type: type[_T], component: _T, /):
-    self.pop(component_type, None)
-    self.add(component)
-
   def __delitem__(self, component_type: type, /):
     self.remove(self[component_type])
 

@@ -61,10 +61,6 @@ class StateManager:
   def __getitem__(self, state_type: type[_T], /) -> _T:
     return self._states[state_type]  # type: ignore[return-value]
 
-  def __setitem__(self, state_type: type[_T], state: _T, /):
-    self.pop(state_type, None)
-    self.add(state)
-
   def __delitem__(self, state_type: type, /):
     self.remove(self[state_type])
 
