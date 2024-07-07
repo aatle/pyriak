@@ -21,7 +21,7 @@ _D = TypeVar('_D')
 
 
 class Entity:
-  __slots__ = 'id', '_components', '_manager', '__weakref__'
+  __slots__ = 'id', '_components', '_manager'
 
   def __init__(self, components: Iterable[object] = (), /):
     self.id: EntityId = self.new_id()
