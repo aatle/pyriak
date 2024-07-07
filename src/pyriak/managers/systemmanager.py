@@ -331,21 +331,20 @@ class SystemManager:
         if event_type not in key_functions:
           continue
         if event_type not in all_key_handlers:
-          if not keys:
-            all_key_handlers[event_type] = {}
-            continue
           handlers = all_handlers[event_type]
           all_key_handlers[event_type] = {key: handlers[:] for key in keys}
-        elif keys:
-          key_handlers = all_key_handlers[event_type]
-          handlers = all_handlers[event_type]
-          for key in keys:
-            if key not in key_handlers:
-              key_handlers[key] = handlers[:]
-            insert_handler(key_handlers[key], handler)
           continue
-        for handlers in all_key_handlers[event_type].values():
-          insert_handler(handlers, handler)
+        key_handlers = all_key_handlers[event_type]
+        if not keys:
+          for handlers in key_handlers.values():
+            insert_handler(handlers, handler)
+          continue
+        handlers = all_handlers[event_type]
+        for key in keys:
+          if key in key_handlers:
+            insert_handler(key_handlers[key], handler)
+          else:
+            key_handlers[key] = handlers[:]
     return events
 
   def _unbind(self, system: System, /) -> list[EventHandlerRemoved]:
