@@ -94,7 +94,7 @@ class SystemManager:
     space = self.space
     if space is None:
       raise TypeError("process() missing 'space'")
-    for handler in self._get_handlers(event)[:]:  # noqa: SIM110
+    for handler in self._get_handlers(event):  # noqa: SIM110
       if handler.callback(space, event):
         return True
     return False
@@ -274,22 +274,22 @@ class SystemManager:
     except KeyError:
       return []
     if event_type not in key_functions:
-      return handlers
+      return handlers[:]
     try:
       key_handlers = self._key_handlers[event_type]
     except KeyError:
       # A key function was added late
       self._key_handlers[event_type] = {}
-      return handlers
+      return handlers[:]
     key = key_functions[event_type](event)
     if not isinstance(key, Iterator):
-      return key_handlers.get(key, handlers)
+      return (key_handlers.get(key, handlers))[:]
     keys = {k for k in key if k in key_handlers}
     if len(keys) > 1:
       return self._sort_handlers(
         [handler for key in keys for handler in key_handlers[key]]
       )
-    return key_handlers.get(keys.pop(), handlers) if keys else handlers
+    return (key_handlers.get(keys.pop(), handlers) if keys else handlers)[:]
 
   @staticmethod
   def _get_bindings(system: System):
