@@ -37,8 +37,6 @@ __all__ = [
   'EntityId',
   'System',
   'EventQueue',
-  'subclasses',
-  'strict_subclasses',
   'key_functions',
   'set_key',
   'tagclass',
@@ -46,7 +44,6 @@ __all__ = [
 ]
 
 from collections.abc import (
-  Generator as _Generator,
   Hashable as _Hashable,
   MutableSequence as _MutableSequence,
 )
@@ -71,47 +68,6 @@ EventQueue: _TypeAlias = _MutableSequence[object]
 
 
 dead_weakref: _weakref[_Any] = _weakref(set())
-
-
-_get_subclasses = type.__subclasses__
-
-def subclasses(cls: _TypeT, /) -> _Generator[_TypeT, None, _TypeT]:
-  """Generator of the class and all of the class's subclasses.
-
-  Metaclasses also work.
-  There may be duplicates in the case of multiple inheritance.
-  Note: overridden implementations of __subclasses__ are ignored
-  because type.__subclasses__ is used, which also prevents cycles.
-
-  The order the classes are returned is not specified, however:
-  It is guaranteed that the cls passed in is the first class yielded.
-  For a tree inheritance structure (single inheritance only), a subclass
-  will never be yielded before any of its superclasses.
-
-  'Return' the cls passed in. (This value is accessible through
-  the StopIteration that is raised).
-  """
-  yield cls
-  get_subclasses = _get_subclasses
-  stack = get_subclasses(cls)
-  pop = stack.pop
-  while stack:
-    subclass = pop()
-    yield subclass
-    stack += get_subclasses(subclass)
-  return cls
-
-
-def strict_subclasses(cls: _TypeT, /) -> _Generator[_TypeT, None, _TypeT]:
-  """Same as subclasses, but does not yield the original class."""
-  get_subclasses = _get_subclasses
-  stack = get_subclasses(cls)
-  pop = stack.pop
-  while stack:
-    subclass = pop()
-    yield subclass
-    stack += get_subclasses(subclass)
-  return cls
 
 
 def tagclass(cls: type) -> type:
