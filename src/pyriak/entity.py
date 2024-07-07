@@ -63,7 +63,7 @@ class Entity:
         if other_component is component or other_component == component:
           del self_components[component_type]
           if manager is not None:
-            manager._component_removed(self, component)
+            manager._component_removed(self, other_component)
           continue
       raise ValueError(component)
 

@@ -54,7 +54,7 @@ class StateManager:
         if other_state is state or other_state == state:
           del self_states[state_type]
           if event_queue is not None:
-            event_queue.append(StateRemoved(state))
+            event_queue.append(StateRemoved(other_state))
           continue
       raise ValueError(state)
 
