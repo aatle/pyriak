@@ -1,3 +1,5 @@
+"""This module contains the implementation for binding event handlers."""
+
 __all__ = ['bind', 'BindingWrapper', 'Binding']
 
 from collections.abc import Callable, Hashable, Iterable
@@ -107,8 +109,8 @@ def bind(event_type, priority, /, *, key=_SENTINEL, keys=_SENTINEL):
   Then, decorate it with a call to bind(), passing in the necessary info.
 
   This creates a binding, which means that when an event of the correct
-  type is processed by the system manager, the callback is invoked.
-  This includes subclasses of the event type, supporting polymorphism.
+  type is processed by the SystemManager, the callback is invoked.
+  This does not include subclasses of the event type. The types must be exact.
 
   The priority determines the order in which callbacks are invoked if there
   are multiple systems or bindings for that event.
@@ -134,8 +136,17 @@ def bind(event_type, priority, /, *, key=_SENTINEL, keys=_SENTINEL):
     key: Defaults to no key. The key that events must have for this handler.
     keys: Defaults to no keys. The keys that events must have any of.
 
+  Raises:
+    TypeError: If the argument types or function call signature are incorrect.
+      If `event_type` is not a type object and hashable.
+      If both `key` and `keys` keyword arguments are passed in.
+      If any of the keys provided are not hashable.
+    ValueError: If the argument value is bad.
+      If a key or keys were provided but the event type doesn't have a key function.
+      In the decorator, if the event type is already bound to this callback.
+
   Returns:
-    A BindingWrapper instance that allows system manager to recognize bindings.
+    A BindingWrapper instance that allows SystemManager to recognize bindings.
   """
   if not isinstance(event_type, type):
     raise TypeError(f'{event_type!r} is not a type')
