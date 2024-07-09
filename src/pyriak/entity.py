@@ -119,7 +119,7 @@ class Entity:
       *components: The components to be removed.
 
     Raises:
-      ValueError: If one of the components was not found in self.
+      ValueError: If one of the components is not found in self.
     """
     self_components = self._components
     manager = self._manager()
