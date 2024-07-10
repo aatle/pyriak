@@ -40,7 +40,6 @@ __all__ = [
   'key_functions',
   'set_key',
   'tagclass',
-  'first',
 ]
 
 from collections.abc import (
@@ -88,10 +87,6 @@ def tagclass(cls: type) -> type:
   cls.__eq__ = __eq__  # type: ignore[method-assign, assignment]
   cls.__hash__ = __hash__  # type: ignore[method-assign, assignment]
   return cls
-
-
-def first(arg: _T, /, *args: _Any) -> _T:  # noqa: ARG001
-  return arg
 
 
 class _Sentinel(_Enum):
