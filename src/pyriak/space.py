@@ -43,13 +43,13 @@ class Space:
   ) -> QueryResult:
     return self.entities.query(*component_types, merge=merge)
 
-  def process(self, event: object) -> bool:
+  def process(self, event: object, /) -> bool:
     return self.systems.process(event)
 
   def post(self, *events: object) -> None:
     self.event_queue.extend(events)
 
-  def pump(self, events: int | None = None) -> int:
+  def pump(self, events: int | None = None, /) -> int:
     process_event = self.process
     queue = self.event_queue
     pop = queue.popleft if isinstance(queue, deque) else lambda: queue.pop(0)
