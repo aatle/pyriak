@@ -40,7 +40,6 @@ __all__ = [
   'key_functions',
   'set_key',
   'tagclass',
-  'first',
 ]
 
 from collections.abc import (
@@ -108,28 +107,6 @@ def tagclass(cls: type) -> type:
   cls.__eq__ = __eq__  # type: ignore[method-assign, assignment]
   cls.__hash__ = __hash__  # type: ignore[method-assign, assignment]
   return cls
-
-
-def first(arg: _T, /, *args: _Any) -> _T:  # noqa: ARG001
-  """Return the first argument passed in.
-
-  In an EntityManager query with multiple types, it is often useful for the
-  merge function to take all entities with a marker component,
-  rather than narrowing those down based on the presence of other components.
-
-  With this function as merge, the query itself would raise a KeyError
-  for missing components.
-  This avoids accidentally hiding malformed entities or missing components,
-  which could lead to subtle and misleading bugs.
-
-  Args:
-    arg: The first argument, which is immediately returned.
-    *args: Arbitrary arguments after the first argument, which are ignored.
-
-  Returns:
-    The first argument given to the function.
-  """
-  return arg
 
 
 class _Sentinel(_Enum):

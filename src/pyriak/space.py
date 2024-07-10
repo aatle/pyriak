@@ -74,7 +74,7 @@ class Space:
     """
     return self.entities.query(*component_types, merge=merge)
 
-  def process(self, event: object) -> bool:
+  def process(self, event: object, /) -> bool:
     """Syntactic sugar for self.systems.process().
 
     ...
@@ -89,7 +89,7 @@ class Space:
     """
     self.event_queue.extend(events)
 
-  def pump(self, events: int | None = None) -> int:
+  def pump(self, events: int | None = None, /) -> int:
     """Pop and process events from self's event queue.
 
     For the given number of times, or until the event queue is empty,
