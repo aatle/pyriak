@@ -43,24 +43,14 @@ class QueryResult:
   def __call__(self, component_type: type[_T], /) -> Iterator[_T]:
     return (entity[component_type] for entity in self.entities)
 
-  @overload
-  def zip(self) -> Iterator[tuple[Any, ...]]: ...
-  @overload
-  def zip(self, *component_types: type[_T]) -> Iterator[tuple[_T, ...]]: ...
-  def zip(self, *component_types):
+  def zip(self, *component_types: type) -> Iterator[tuple[Any, ...]]:
     if not component_types:
       component_types = self.types
     return (
       tuple([ent[comp_type] for comp_type in component_types]) for ent in self.entities
     )
 
-  @overload
-  def zip_entity(self) -> Iterator[tuple[Any, ...]]: ...
-  @overload
-  def zip_entity(
-    self, *component_types: type[_T]
-  ) -> Iterator[tuple[Entity | _T, ...]]: ...
-  def zip_entity(self, *component_types):
+  def zip_entity(self, *component_types: type) -> Iterator[tuple[Any, ...]]:
     if not component_types:
       component_types = self.types
     return (
