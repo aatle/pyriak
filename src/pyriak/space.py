@@ -23,6 +23,12 @@ class Space:
   A Space does not implement anything on its own. Instead, it serves as a
   bundle for the behavior (systems), data (entities and states), and
   communication (events).
+
+  Attributes:
+    event_queue: A mutable sequence that holds events to be processed.
+    systems: A SystemManager, holds the systems of the space.
+    entities: An EntityManager, holds the entities of the space.
+    states: A StateManager, holds the states of the space.
   """
 
   __slots__ = 'event_queue', 'systems', 'entities', 'states', '__weakref__'
