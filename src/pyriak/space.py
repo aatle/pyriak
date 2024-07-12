@@ -74,9 +74,26 @@ class Space:
   def query(
     self, /, *component_types: type, merge: Callable[..., set] = set.intersection
   ) -> QueryResult:
-    """Syntactic sugar for self.entities.query().
+    """Get bulk entity and component data from self's entities.
 
-    ...
+    Syntactic sugar for self.entities.query().
+    For more details and specifics, see documentation of EntityManager.query().
+
+    Args:
+      *component_types: The types that are used to generate the set of entities.
+      merge: The set merge function used to combine the sets of ids into one.
+
+    Raises:
+      TypeError: If exactly zero component types were given.
+
+    Returns:
+      A readonly QueryResult object that contains the data and info of the query.
+
+    Example:
+      Typical usage of query() method::
+
+        for sprite, position in space.query(Sprite, Position).zip():
+          render(sprite, position)
     """
     return self.entities.query(*component_types, merge=merge)
 
