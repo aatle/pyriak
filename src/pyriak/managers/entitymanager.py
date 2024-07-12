@@ -71,6 +71,9 @@ class _Components:
 
   _manager: Callable[[], 'EntityManager']
 
+  def __init__(self, manager: 'EntityManager', /):
+    self._manager = weakref(manager)  # type: ignore[assignment]
+
   def __call__(self, component_type: type[_T], /) -> Iterator[_T]:
     manager = self._manager()
     entities = manager._entities
@@ -104,8 +107,7 @@ class EntityManager:
     self, entities: Iterable[Entity] = (), /, event_queue: EventQueue | None = None
   ):
     self.event_queue = event_queue
-    self.components = _Components()
-    self.components._manager = weakref(self)  # type: ignore[assignment]
+    self.components = _Components(self)
     self._entities: dict[EntityId, Entity] = {}
     self._component_types: dict[type, set[EntityId]] = {}
     self.add(*entities)
