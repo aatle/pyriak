@@ -1,3 +1,5 @@
+"""This module implements the EntityManager and its helper classes."""
+
 __all__ = ['EntityManager', 'QueryResult']
 
 from collections.abc import Collection, Iterable, Iterator, KeysView, Set as AbstractSet
@@ -13,6 +15,18 @@ _T = TypeVar('_T')
 
 
 class QueryResult:
+  """An object holding the results of the query, with methods to access it.
+
+  Data requested from the EntityManager is exposed in a couple different
+  formats, using the QueryResult object.
+  It also contains the parameters for the query. The types may be used
+  as a default for certain methods.
+
+  Since the data is computed only once, a QueryResult should generally not be
+  stored as it may become stale. There is little reason to keep it alive
+  outside of the query call expression that created it.
+  """
+
   __slots__ = '_entities', '_types', '_merge'
 
   def __init__(
@@ -26,24 +40,52 @@ class QueryResult:
 
   @property
   def ids(self) -> AbstractSet[EntityId]:
+    """The ids of the entities of the query."""
     return self._entities.keys()
 
   @property
   def entities(self) -> Collection[Entity]:
+    """The entities of the query."""
     return self._entities.values()
 
   @property
   def types(self) -> tuple[type, ...]:
+    """The component types passed to the query call, in order."""
     return self._types
 
   @property
   def merge(self) -> Callable[..., set]:
+    """The merge function passed to the query call.
+
+    The default query merge function is set.intersection.
+    """
     return self._merge
 
   def __call__(self, component_type: type[_T], /) -> Iterator[_T]:
     return (entity[component_type] for entity in self.entities)
 
   def zip(self, *component_types: type) -> Iterator[tuple[Any, ...]]:
+    """Return an iterator of tuples of components.
+
+    For each entity, a tuple is yielded with components corresponding to the
+    component types provided. If no component types are given, it defaults
+    to the component types passed in for the query call, self.types.
+
+    If the entity doesn't have one of the component types when the entity is
+    reached in the iterator, a KeyError is raised from the entity.
+
+    Args:
+      *component_types: The types to access from the query's entities.
+
+    Returns:
+      An iterator yielding same-length tuples of components.
+
+    Example:
+      Typical usage of zip() method::
+
+        for sprite, position in space.query(Sprite, Position).zip():
+          render(sprite, position)
+    """
     if not component_types:
       component_types = self.types
     return (
@@ -51,6 +93,26 @@ class QueryResult:
     )
 
   def zip_entity(self, *component_types: type) -> Iterator[tuple[Any, ...]]:
+    """Return an iterator of tuples of the entity and its components.
+
+    This method is the same as zip() except that each tuple starts with the
+    entity, which is followed by the components.
+    The component types default to self.types, the types in the query call,
+    if none are provided.
+
+    Args:
+      *component_types: The types to access from the query's entities.
+
+    Returns:
+      An iterator yielding same-length tuples of the entity and its components.
+
+    Example:
+      Typical usage of zip_entity() method::
+
+        for entity, lifetime in space.query(Lifetime).zip_entity():
+          if lifetime.timer < 0:
+            space.post(KillEntity(entity))
+    """
     if not component_types:
       component_types = self.types
     return (
@@ -61,10 +123,22 @@ class QueryResult:
 
 
 class _Components:
-  """The components attribute of an EntityManager instance, exposes more functionality.
+  """The components attribute of an EntityManager, exposes more functionality.
 
-  If the EntityManager has been garbage collected, all methods
-  raise TypeError.
+  The EntityManager not only manages the entities it holds, but also partially
+  manages the components in those entities.
+  The components attribute of the EntityManager exposes additional operations for
+  the components in the entities, while the entity operations are on the manager.
+
+  Instances are not meant to be independent; they serve as an extension
+  to the EntityManager in a syntactically intuitive way, through dot access.
+  As such, they are only a proxy for the manager's data.
+
+  If the EntityManager has been deleted and garbage collected, all methods
+  raise TypeError. A _Components instance only weakly references its manager.
+
+  Attributes:
+    _manager: A weakref to the manager (narrower type annotation to avoid errors).
   """
 
   __slots__ = ('_manager',)
@@ -72,6 +146,25 @@ class _Components:
   _manager: Callable[[], 'EntityManager']
 
   def __call__(self, component_type: type[_T], /) -> Iterator[_T]:
+    """Return an iterator of all components of a type in the manager.
+
+    For each entity that has it, its component is yielded.
+    The order of entities/components is not defined.
+    The iterator may be empty.
+
+    Since it is an iterator, there are some limitations with it:
+    - Raises KeyError if one of the entities is no longer
+      in the manager when it is reached in iteration.
+    - Raises RuntimeError if the number of entities with
+      the component type changes during iteration.
+    If necessary, these can be avoided by converting to tuple.
+
+    Args:
+      component_type: The type of components to get.
+
+    Returns:
+      An iterator of components of that type, from the manager's entities.
+    """
     manager = self._manager()
     entities = manager._entities
     return (
@@ -98,11 +191,43 @@ class _Components:
 
 
 class EntityManager:
+  """A manager and container of entities.
+
+  The EntityManager stores the entities of a space and provides ways to
+  access them and their components.
+  Almost all entities instantiated get added to the EntityManager
+  so they are accessible from the rest of the space.
+
+  An entity may only be stored in at most one EntityManager at once,
+  because entities weakly reference their managers to update caches.
+
+  The manager also has a .components attribute which extends the manager by
+  exposing additional (readonly) operations for the components within the entities.
+
+  The EntityManager is owned directly by the Space.
+  There is usually only one, accessible via the Space's 'entities' attribute.
+
+  Attributes:
+    event_queue: The optional event queue that the EntityManager may post to.
+      This is usually assigned the space's event queue.
+  """
+
   __slots__ = '_entities', '_component_types', 'components', 'event_queue', '__weakref__'
 
   def __init__(
     self, entities: Iterable[Entity] = (), /, event_queue: EventQueue | None = None
   ):
+    """Initialize the EntityManager with the given entities and event queue.
+
+    By default, the EntityManager is initialized with no entities and
+    event queue as None.
+
+    Also initializes the components attribute of the manager.
+
+    Args:
+      entities: The iterable of initial entities. Defaults to no entities.
+      event_queue: The event queue to post to. Defaults to None.
+    """
     self.event_queue = event_queue
     self.components = _Components()
     self.components._manager = weakref(self)  # type: ignore[assignment]
@@ -111,6 +236,24 @@ class EntityManager:
     self.add(*entities)
 
   def add(self, *entities: Entity) -> None:
+    """Add an arbitrary number of entities to self.
+
+    Each entity is stored by its unique id.
+
+    If self already has the entity being added, it is skipped.
+
+    If self's event queue is not None, each entity added generates
+    an EntityAdded event, and then a ComponentAdded event for each
+    component in the entity.
+
+    An entity may only added to at most one manager.
+
+    Args:
+      *entities: The entities to be added.
+
+    Raises:
+      RuntimeError: If one of the entities is added to another manager.
+    """
     component_types = self._component_types
     self_entities = self._entities
     self_weakref: weakref[EntityManager] = weakref(self)
@@ -135,15 +278,38 @@ class EntityManager:
         ])
 
   def create(self, *components: object) -> Entity:
-    """Create an Entity with the given components, add it to self, and return it.
+    """Create and return a new Entity with components, added to self.
 
-    The returned Entity can, of course, be directly modified.
+    The entity is instantiated with the given components.
+    Then, it is added to self and returned.
+    The adding generates EntityAdded and ComponentAdded events.
+
+    Args:
+      *components: The components of the new entity.
+
+    Returns:
+      The entity created.
     """
     entity: Entity = Entity(components)
     self.add(entity)
     return entity
 
   def remove(self, *entities: Entity) -> None:
+    """Remove an arbitrary number of entities from self.
+
+    If the entity being removed is not in self, a ValueError
+    is raised, preventing the rest of the entities from being removed,
+    but not affecting the entities already removed.
+
+    If self's event queue is not None, an EntityRemoved event followed
+    by ComponentRemoved events for each component are posted.
+
+    Args:
+      *entities: The entities to be removed.
+
+    Raises:
+      ValueError: If one of the entities is not in self.
+    """
     component_types = self._component_types
     event_queue = self.event_queue
     for entity in entities:
@@ -167,7 +333,33 @@ class EntityManager:
   def query(
     self, /, *component_types: type, merge: Callable[..., set] = set.intersection
   ) -> QueryResult:
-    """"""
+    """Request specific data from the manager.
+
+    Given an arbitrary non-zero number of types, return bulk data about
+    the set of entities corresponding to these types, as a QueryResult.
+
+    Each component type has a set of entities/ids that have it.
+    The merge function combines these sets to create the final set of
+    entities/ids that are used.
+
+    By default, the merge function is set.intersection, which means the
+    result is the entities that have all of the component types.
+
+    The merge function must take a number of sets as arguments, where the
+    number is how many component types are passed in, and return a set.
+    Preferably, the merge function can take an arbitrary non-zero number of sets.
+    The most common merge functions are unbound set methods.
+
+    Args:
+      *component_types: The types that are used to generate the set of entities.
+      merge: The set merge function used to combine the sets of ids into one.
+
+    Raises:
+      TypeError: If exactly zero component types were given.
+
+    Returns:
+      A readonly QueryResult object that contains the data and info of the query.
+    """
     if not component_types:
       raise TypeError('expected at least one component type')
     self_entities = self._entities
@@ -186,7 +378,24 @@ class EntityManager:
     )
 
   def __call__(self, component_type: type, /) -> Iterator[Entity]:
-    """Return a generator of all entities in self that contain component_type."""
+    """Return an iterator of all entities with component type in the manager.
+
+    For each entity that has a component of the type given, it is yielded.
+    The order of entities is not defined. The iterator may be empty.
+
+    Since it is an iterator, there are some limitations with it:
+    - Raises KeyError if one of the entities is no longer
+      in the manager when it is reached in iteration.
+    - Raises RuntimeError if the number of entities with
+      the component type changes during iteration.
+    If necessary, these can be avoided by converting to tuple.
+
+    Args:
+      component_type: The component type to find entities with.
+
+    Returns:
+      An iterator of entities that have component_type.
+    """
     entities = self._entities
     return (
       entities[entity_id] for entity_id in self._component_types.get(component_type, ())
@@ -226,18 +435,20 @@ class EntityManager:
   def ids(self, component_type=None, /):
     """Return a set of all entity ids that contain the given component type.
 
-    If no component type is given, then
-    return a set-like view of all entity ids in self instead.
+    If no component type is given or is None, then return a readonly set-like
+    view of all entity ids in self instead (keys view).
+
+    Args:
+      component_type: The type that entities must have. Defaults to None.
+
+    Returns:
+      Either a set-like keys view of ids or a set of ids.
     """
     if component_type is None:
       return self._entities.keys()
     return set(self._component_types.get(component_type, ()))
 
   def __iter__(self):
-    """Return an iterator of all Entities in self.
-
-    The least recently added Entities are first.
-    """
     return iter(self._entities.values())
 
   def __reversed__(self):
