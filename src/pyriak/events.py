@@ -31,7 +31,7 @@ if TYPE_CHECKING:
   from pyriak import System
   from pyriak.bind import _Callback
   from pyriak.entity import Entity
-  from pyriak.managers.systemmanager import _EventHandler
+  from pyriak.system_manager import _EventHandler
 
 
 class EntityAdded:

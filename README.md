@@ -81,7 +81,6 @@ Components can be created large and then later broken down into a batch of multi
  
 
 ## TO DO:
-- flatten managers
 - `__future__.annotations`
 - dynamic handlers?
 - 3.11 typing features

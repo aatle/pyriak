@@ -12,7 +12,7 @@ from pyriak import _SENTINEL, dead_weakref
 if TYPE_CHECKING:
   from weakref import ref as weakref
 
-  from pyriak.managers import EntityManager
+  from pyriak.entity_manager import EntityManager
 
 
 EntityId = NewType('EntityId', int)

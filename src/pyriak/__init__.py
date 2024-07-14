@@ -118,8 +118,8 @@ _SENTINEL: _Sentinel = _Sentinel.SENTINEL
 # circular imports
 from pyriak.bind import bind  # noqa: E402
 from pyriak.entity import Entity, EntityId  # noqa: E402
+from pyriak.entity_manager import QueryResult as QueryResult  # noqa: E402
 from pyriak.eventkey import key_functions, set_key  # noqa: E402
-from pyriak.managers.entitymanager import QueryResult as QueryResult  # noqa: E402
 from pyriak.space import Space  # noqa: E402
 
 

@@ -5,8 +5,10 @@ __all__ = ['Space']
 from collections import deque
 from collections.abc import Callable
 
-from pyriak import EventQueue, managers
-from pyriak.managers.entitymanager import QueryResult
+from pyriak import EventQueue
+from pyriak.entity_manager import EntityManager, QueryResult
+from pyriak.state_manager import StateManager
+from pyriak.system_manager import SystemManager
 
 
 class Space:
@@ -36,9 +38,9 @@ class Space:
   def __init__(
     self, *,
     event_queue: EventQueue | None = None,
-    systems: managers.SystemManager | None = None,
-    entities: managers.EntityManager | None = None,
-    states: managers.StateManager | None = None,
+    systems: SystemManager | None = None,
+    entities: EntityManager | None = None,
+    states: StateManager | None = None,
   ):
     """Initialize the Space with the managers and event queue.
 
@@ -58,16 +60,16 @@ class Space:
       event_queue = deque()
     self.event_queue = event_queue
     if systems is None:
-      systems = managers.SystemManager()
+      systems = SystemManager()
     self.systems = systems
     systems.space = self
     systems.event_queue = event_queue
     if entities is None:
-      entities = managers.EntityManager()
+      entities = EntityManager()
     self.entities = entities
     entities.event_queue = event_queue
     if states is None:
-      states = managers.StateManager()
+      states = StateManager()
     self.states = states
     states.event_queue = event_queue
 
