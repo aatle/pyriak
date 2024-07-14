@@ -93,7 +93,7 @@ class SystemManager:
     """
     space = self.space
     if space is None:
-      raise TypeError("process() missing 'space'")
+      raise RuntimeError('cannot process event, space is None or deleted')
     for handler in self._get_handlers(event):  # noqa: SIM110
       if handler.callback(space, event):
         return True

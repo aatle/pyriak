@@ -81,26 +81,26 @@ Components can be created large and then later broken down into a batch of multi
  
 
 ## TO DO:
+- flatten managers
+- `__future__.annotations`
 - dynamic handlers?
 - 3.11 typing features
-- `__future__.annotations`
 - type aliases
 - 'direct', 'indirect', 'strict', 'immediate' vocab docs
 - sys mgr expose handlers + bind predicate/filter?
 - `__contains__` TypeError raise?
 - picklable `__setstate__ __getstate__ __copy__` classes
-- 'processor' game pump generator yield event method, 'event loop'
+- 'processor' game pump generator yield event method, 'event loop'?
 - discard method
-- keys method (for dict protocol)
+- keys method (for dict protocol)?
+- views, items methods: mappingproxy
 - improve error messages
 - raise from None bad
-- views, items methods: mappingproxy
 - `__eq__`, remove `__hash__`: mgrs
 - entities from ids: itertools helpers in entitymgr
-- 'add', 'remove' methods return value?
 - more container (set) dunder methods, operations
 - copy methods
-- .has() method (for component, state, entity?)?
+- .has() method (for component, state, entity)?
 - more positional only arguments
 - str and repr methods all
 - place documentation in code, along with all rules
