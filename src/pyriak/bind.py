@@ -136,6 +136,9 @@ def bind(event_type, priority, /, *, key=_SENTINEL, keys=_SENTINEL):
     key: Defaults to no key. The key that events must have for this handler.
     keys: Defaults to no keys. The keys that events must have any of.
 
+  Returns:
+    A BindingWrapper instance that allows SystemManager to recognize bindings.
+
   Raises:
     TypeError: If the argument types or function call signature are incorrect.
       If `event_type` is not a type object and hashable.
@@ -144,9 +147,6 @@ def bind(event_type, priority, /, *, key=_SENTINEL, keys=_SENTINEL):
     ValueError: If the argument value is bad.
       If a key or keys were provided but the event type doesn't have a key function.
       In the decorator, if the event type is already bound to this callback.
-
-  Returns:
-    A BindingWrapper instance that allows SystemManager to recognize bindings.
   """
   if not isinstance(event_type, type):
     raise TypeError(f'{event_type!r} is not a type')

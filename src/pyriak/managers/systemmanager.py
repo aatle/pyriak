@@ -138,11 +138,11 @@ class SystemManager:
     Args:
       event: The event to process.
 
-    Raises:
-      RuntimeError: If self's space is None or deleted.
-
     Returns:
       True if event processing was stopped by a callback, False otherwise.
+
+    Raises:
+      RuntimeError: If self's space is None or deleted.
     """
     space = self.space
     if space is None:

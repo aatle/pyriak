@@ -83,11 +83,11 @@ class Space:
       *component_types: The types that are used to generate the set of entities.
       merge: The set merge function used to combine the sets of ids into one.
 
-    Raises:
-      TypeError: If exactly zero component types were given.
-
     Returns:
       A readonly QueryResult object that contains the data and info of the query.
+
+    Raises:
+      TypeError: If exactly zero component types were given.
 
     Example:
       Typical usage of query() method::
