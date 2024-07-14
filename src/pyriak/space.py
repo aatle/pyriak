@@ -1,3 +1,5 @@
+"""This module implements the Space class."""
+
 __all__ = ['Space']
 
 from collections import deque
@@ -8,6 +10,27 @@ from pyriak.managers.entitymanager import QueryResult
 
 
 class Space:
+  """An encapsulation of a standalone program.
+
+  A Space glues together the three managers into
+  a single object that represents the entire program.
+  It also has a central event queue that controls the flow of the program.
+
+  As this object contains everything, it can be used to access any needed data,
+  and is useful to pass as an argument into a function to allow it to
+  read or change the program state.
+
+  A Space does not implement anything on its own. Instead, it serves as a
+  bundle for the behavior (systems), data (entities and states), and
+  communication (events).
+
+  Attributes:
+    event_queue: A mutable sequence that holds events to be processed.
+    systems: A SystemManager, holds the systems of the space.
+    entities: An EntityManager, holds the entities of the space.
+    states: A StateManager, holds the states of the space.
+  """
+
   __slots__ = 'event_queue', 'systems', 'entities', 'states', '__weakref__'
 
   def __init__(
@@ -17,9 +40,19 @@ class Space:
     entities: managers.EntityManager | None = None,
     states: managers.StateManager | None = None,
   ):
-    """A new Space instance, which glues together the managers and the event queue.
+    """Initialize the Space with the managers and event queue.
 
-    By default, creates the EntityManager, StateManager, and SystemManager.
+    By default (or when None is given as the argument), instantiates
+    an empty deque for the event queue, and creates the managers.
+
+    The managers' event_queue attributes are set to the space's
+    event queue. The SystemManager's space attribute is set to self.
+
+    Args:
+      event_queue: The Space's event queue. Defaults to a creating a new deque.
+      systems: The Space's SystemManager. Defaults to creating one.
+      entities: The Space's EntityManager. Defaults to creating one.
+      states: The Space's StateManager. Defaults to creating one.
     """
     if event_queue is None:
       event_queue = deque()
@@ -41,15 +74,83 @@ class Space:
   def query(
     self, /, *component_types: type, merge: Callable[..., set] = set.intersection
   ) -> QueryResult:
+    """Get bulk entity and component data from self's entities.
+
+    Syntactic sugar for self.entities.query().
+    For more details and specifics, see documentation of EntityManager.query().
+
+    Args:
+      *component_types: The types that are used to generate the set of entities.
+      merge: The set merge function used to combine the sets of ids into one.
+
+    Returns:
+      A readonly QueryResult object that contains the data and info of the query.
+
+    Raises:
+      TypeError: If exactly zero component types were given.
+
+    Example:
+      Typical usage of query() method::
+
+        for sprite, position in space.query(Sprite, Position).zip():
+          render(sprite, position)
+    """
     return self.entities.query(*component_types, merge=merge)
 
   def process(self, event: object, /) -> bool:
+    """Immediately invoke event handlers for an event.
+
+    Syntactic sugar for self.systems.process().
+    See SystemManager.process() documentation for more details.
+
+    The difference between process() and post() is that process()
+    is synchronous and blocks until the event has been processed,
+    while post() is asynchronous, deferring the event to the event queue
+    to eventually be processed.
+    Since post() only puts events on a queue, it is non-blocking.
+
+    Args:
+      event: The event to process.
+
+    Returns:
+      True if event processing was stopped by a callback, False otherwise.
+
+    Raises:
+      RuntimeError: If the SystemManager's space is None or deleted.
+    """
     return self.systems.process(event)
 
   def post(self, *events: object) -> None:
+    """Append an event or events to the end of self's event queue.
+
+    Args:
+      *events: The events to be posted to the event queue.
+    """
     self.event_queue.extend(events)
 
   def pump(self, events: int | None = None, /) -> int:
+    """Pop and process events from self's event queue.
+
+    For the given number of times, or until the event queue is empty,
+    events are popped from the front of the event queue and then processed.
+    (The event queue can still get new events while this method is running.)
+
+    The number of times defaults to None (infinite), meaning it will
+    only stop when the event queue is empty.
+
+    pump() is safe to be called recursively/nested.
+
+    The return value is the actual number of events processed, which is
+    less than or equal to the number passed in.
+    It is 0 if and only if the event queue was already empty when pump()
+    was called and there are no more events left to process.
+
+    Args:
+      events: The max number of events to process. Defaults to None (infinite).
+
+    Returns:
+      The number of events actually popped from the event queue and processed.
+    """
     process_event = self.process
     queue = self.event_queue
     pop = queue.popleft if isinstance(queue, deque) else lambda: queue.pop(0)

@@ -70,6 +70,26 @@ dead_weakref: _weakref[_Any] = _weakref(set())
 
 
 def tagclass(cls: type) -> type:
+  """Decorate a class for featureless instances that can serve as 'tags'.
+
+  Certain components, states, and events might not need to carry any
+  data; their mere presence is the information.
+
+  This function, usually used as a decorator on an empty class,
+  is a way to automatically create a class for this purpose.
+
+  The returned class is a new class with the same bases and namespace,
+  and has extra features:
+  - __eq__: True for objects of the exact same type, else NotImplemented
+  - __hash__: same for all objects of the exact same type
+  - __slots__: empty tuple if not already present in namespace, saving memory
+
+  Args:
+    cls: The class to derive name, bases, and namespace from.
+
+  Returns:
+    A new class derived from the original, whose instances are intended as tags.
+  """
   namespace = dict(cls.__dict__)
   namespace.setdefault('__slots__', ())
   namespace.pop('__dict__', None)
