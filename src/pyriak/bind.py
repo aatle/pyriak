@@ -8,7 +8,6 @@ from typing import (
   TYPE_CHECKING,
   Any,
   Generic,
-  Protocol,
   TypeAlias,
   TypeVar,
   overload,
@@ -24,7 +23,6 @@ if TYPE_CHECKING:
 
 _T = TypeVar('_T')
 _R = TypeVar('_R')
-_S = TypeVar('_S')
 
 _Callback: TypeAlias = Callable[['Space', _T], _R]
 
@@ -33,10 +31,11 @@ _empty_frozenset: frozenset[object] = frozenset()
 
 
 class Binding(Generic[_T, _R]):
-  """A Binding wraps the event handler callback with its bindings.
+  """A Binding wraps the event handler callback with handler info.
 
   bind() returns a Binding. When a system is added to a SystemManager,
   it searches the system for attributes of type Binding.
+  An event handler is then created for each binding on the system.
 
   Binding forwards calls to the internal callback.
   Binding supports descriptor access by redirecting it to the internal
@@ -82,39 +81,31 @@ class Binding(Generic[_T, _R]):
     return descr_get(callback, obj, objtype)
 
 
-class _Decorator(Protocol, Generic[_T]):
-  @overload
-  def __call__(
-    self, callback: Binding[_S, _R], /
-  ) -> Binding[_S | _T, _R]: ...
-  @overload
-  def __call__(self, callback: _Callback[_T, _R], /) -> Binding[_T, _R]: ...
-
-
 @overload
 def bind(
   event_type: type[_T], priority: Any, /
-) -> _Decorator[_T]: ...
+) -> Callable[[_Callback[_T, _R]], Binding[_T, _R]]: ...
 @overload
 def bind(
   event_type: type[_T], priority: Any, /, *, key: Hashable
-) -> _Decorator[_T]: ...
+) -> Callable[[_Callback[_T, _R]], Binding[_T, _R]]: ...
 @overload
 def bind(
   event_type: type[_T], priority: Any, /, *, keys: Iterable[Hashable]
-) -> _Decorator[_T]: ...
+) -> Callable[[_Callback[_T, _R]], Binding[_T, _R]]: ...
 def bind(event_type, priority, /, *, key=_SENTINEL, keys=_SENTINEL):
   """Bind a callback to an event type.
 
   To use, define a function that takes two arguments, space and event.
   Then, decorate it with a call to bind(), passing in the necessary info.
 
-  This creates a binding, which means that when an event of the correct
-  type is processed by the SystemManager, the callback is invoked.
+  This creates a binding. When the system is added to the space's SystemManager,
+  an event handler will be created for this binding, which means that when an event
+  of the correct type is processed by the SystemManager, the callback is invoked.
   This does not include subclasses of the event type. The types must be exact.
 
   The priority determines the order in which callbacks are invoked if there
-  are multiple systems or bindings for that event.
+  are multiple systems or event handlers for that event.
 
   The optional key or keys further narrow which events are handled.
   The event must give at least one key that matches the binding,
@@ -122,19 +113,18 @@ def bind(event_type, priority, /, *, key=_SENTINEL, keys=_SENTINEL):
   This is only valid for event types with key functions.
 
   bind() should only be used on attributes directly on the system.
-
-  bind() can be used multiple times on the same callback, as long as
-  different event types are bound.
+  bind() cannot be used multiple times on the same object.
 
   bind() works on any callable, but the signature should be correct.
-  It can be manually invoked with two calls instead of using as a decorator.
-  The most common place where this is used is on a module top-level function,
-  where the module is the system.
+  It can be manually invoked with two calls instead of using as a decorator,
+  if necessary.
+  The most common place where bind() is used is on a module top-level function,
+  where the module object is the system.
 
   Args:
     event_type: The type of events that the handler will be triggered by.
-    priority: The object the handler will be sorted by during invocation.
-    key: Defaults to no key. The key that events must have for this handler.
+    priority: The object the handler will be sorted by for invocation.
+    key: Defaults to no key. The key that events must have for the handler.
     keys: Defaults to no keys. The keys that events must have any of.
 
   Returns:
@@ -145,9 +135,15 @@ def bind(event_type, priority, /, *, key=_SENTINEL, keys=_SENTINEL):
       If `event_type` is not a type object and hashable.
       If both `key` and `keys` keyword arguments are passed in.
       If any of the keys provided are not hashable.
-    ValueError: If the argument value is bad.
-      If a key or keys were provided but the event type doesn't have a key function.
-      In the decorator, if the event type is already bound to this callback.
+      In the decorator, if the object is already a binding.
+    ValueError: If key(s) were provided but the event type doesn't have a key function.
+
+  Example:
+    Typical usage of bind() decorator::
+
+      @bind(UpdateGame, 500)
+      def update_physics(space: Space, event: UpdateGame):
+        ...
   """
   if not isinstance(event_type, type):
     raise TypeError(f'{event_type!r} is not a type')

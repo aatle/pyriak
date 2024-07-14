@@ -206,8 +206,8 @@ class _EventHandlerEvent:
 class EventHandlerAdded(_EventHandlerEvent):
   """An event for when a single event handler is added.
 
-  When a system is added to the SystemManager, it may have bindings,
-  and each binding has event handlers (one per event type) to add.
+  When a system is added to the SystemManager, it may have bindings.
+  For each binding, an event handler is created on the manager.
 
   The event key is the event type of the handler.
 
@@ -225,8 +225,8 @@ class EventHandlerAdded(_EventHandlerEvent):
 class EventHandlerRemoved(_EventHandlerEvent):
   """An event for when a single event handler is removed.
 
-  A system removed from the SystemManager may have event
-  handlers to be removed.
+  A system removed from the SystemManager may own event
+  handlers that need to be removed.
 
   The event key is the event type of the handler.
 

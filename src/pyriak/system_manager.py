@@ -393,10 +393,10 @@ class SystemManager:
     ]
 
   def _bind(self, system: System, /) -> list[EventHandlerAdded]:
-    """Bind a system's handlers so that they can process events.
+    """Create handlers to process events for a system's bindings.
 
-    Bindings of an event type are sorted by highest priority,
-    then oldest system, then first one bound in system.
+    Handlers of one event type are sorted by highest priority,
+    then oldest system, then first one created in manager.
     """
     all_handlers = self._handlers
     all_key_handlers = self._key_handlers
