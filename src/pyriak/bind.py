@@ -60,25 +60,41 @@ class BindingWrapper(Generic[_T, _R]):
   in a class.
 
   Attributes:
-    __wrapped__: The event handler callable wrapped by the BindingWrapper.
+    _callback_: The event handler callback wrapped by the BindingWrapper.
+    _event_type_: The event type bound to the handler.
+    _priority_: The priority of the handler for this event type.
+    _keys_: The frozenset of event keys that the handler be triggered by.
+      Often empty, or only containing one key.
   """
 
   __wrapped__: _Callback[_T, _R]
 
-  def __init__(self, wrapped: _Callback[_T, _R], bindings: tuple[Binding, ...], /):
-    self.__bindings__ = bindings
-    update_wrapper(self, wrapped)
+  def __init__(
+    self,
+    callback: _Callback[_T, _R],
+    event_type: type,
+    priority: Any,
+    keys: frozenset[Hashable],
+  ):
+    update_wrapper(self, callback)
+    self._event_type_ = event_type
+    self._priority_ = priority
+    self._keys_ = keys
+
+  @property
+  def _callback_(self) -> _Callback[_T, _R]:
+    return self.__wrapped__
 
   def __call__(self, space: 'Space', event: _T, /) -> _R:
-    return self.__wrapped__(space, event)
+    return self._callback_(space, event)
 
   def __get__(self, obj, objtype=None):
-    wrapped = self.__wrapped__
+    callback = self._callback_
     try:
-      descr_get = type(wrapped).__get__  # type: ignore[attr-defined]
+      descr_get = type(callback).__get__  # type: ignore[attr-defined]
     except AttributeError:
-      return wrapped
-    return descr_get(wrapped, obj, objtype)
+      return callback
+    return descr_get(callback, obj, objtype)
 
 
 class _Decorator(Protocol, Generic[_T]):
@@ -165,13 +181,7 @@ def bind(event_type, priority, /, *, key=_SENTINEL, keys=_SENTINEL):
       f'bind(): keys were provided but no key function exists for {event_type!r}'
     )
   def decorator(callback, /):
-    if not isinstance(callback, BindingWrapper):
-      return BindingWrapper(callback, (Binding(event_type, priority, keys),))
-    for binding in callback.__bindings__:
-      if event_type is binding.event_type:
-        raise ValueError(
-          f'event handler {callback.__wrapped__!r} already has binding for {event_type!r}'
-        )
-    callback.__bindings__ += (Binding(event_type, priority, keys),)
-    return callback
+    if isinstance(callback, BindingWrapper):
+      raise TypeError('cannot bind same object multiple times')
+    return BindingWrapper(callback, event_type, priority, keys)
   return decorator

@@ -29,7 +29,7 @@ from pyriak.eventkey import set_key as _set_key
 
 if TYPE_CHECKING:
   from pyriak import System
-  from pyriak.bind import _Callback
+  from pyriak.bind import BindingWrapper, _Callback
   from pyriak.entity import Entity
   from pyriak.system_manager import _EventHandler
 
@@ -160,49 +160,39 @@ def _handler_key(event: 'EventHandlerAdded | EventHandlerRemoved') -> type:
   return event.event_type
 
 
-@_set_key(_handler_key)
-class EventHandlerAdded:
-  """An event for when a single event handler is added.
-
-  When a system is added to the SystemManager, it may have bindings,
-  and each binding has event handlers (one per event type) to add.
-
-  The event key is the event type of the handler.
-
-  Attributes:
-    event_type: The event type of the event handler.
-    keys: The keys of the event handler. May be empty.
-    system: The system of the event handler.
-    callback: The callback of the event handler.
-    name: The attribute name of the binding on the system.
-    priority: The priority of the event handler.
-  """
-
+class _EventHandlerEvent:
   def __init__(
-    self, _handler: '_EventHandler', _event_type: type, _keys: frozenset[Hashable]
+    self, _binding: 'BindingWrapper', _handler: '_EventHandler'
   ):
+    self._binding = _binding
     self._handler = _handler
-    self.event_type = _event_type
-    self.keys = _keys
 
   @property
-  def system(self):
+  def system(self) -> 'System':
     return self._handler.system
 
   @property
-  def callback(self):
+  def callback(self) -> '_Callback':
     return self._handler.callback
 
   @property
-  def name(self):
+  def name(self) -> str:
     return self._handler.name
 
   @property
-  def priority(self):
-    return self._handler.priority
+  def priority(self) -> Any:
+    return self._binding._priority_
 
   @property
-  def key(self):
+  def event_type(self) -> type:
+    return self._binding._event_type_
+
+  @property
+  def keys(self) -> frozenset[Hashable]:
+    return self._binding._keys_
+
+  @property
+  def key(self) -> Hashable:
     """The single key of the event handler, if applicable.
 
     Often, a key event handler only binds a single key.
@@ -213,7 +203,26 @@ class EventHandlerAdded:
 
 
 @_set_key(_handler_key)
-class EventHandlerRemoved:
+class EventHandlerAdded(_EventHandlerEvent):
+  """An event for when a single event handler is added.
+
+  When a system is added to the SystemManager, it may have bindings,
+  and each binding has event handlers (one per event type) to add.
+
+  The event key is the event type of the handler.
+
+  Attributes:
+    system: The system of the event handler.
+    callback: The callback of the event handler.
+    name: The attribute name of the binding on the system.
+    priority: The priority of the event handler.
+    event_type: The event type of the event handler.
+    keys: The keys of the event handler. May be empty.
+  """
+
+
+@_set_key(_handler_key)
+class EventHandlerRemoved(_EventHandlerEvent):
   """An event for when a single event handler is removed.
 
   A system removed from the SystemManager may have event
@@ -222,31 +231,10 @@ class EventHandlerRemoved:
   The event key is the event type of the handler.
 
   Attributes:
-    event_type: The event type of the event handler.
-    keys: The keys of the event handler. May be empty.
     system: The system of the event handler.
     callback: The callback of the event handler.
     name: The attribute name of the binding on the system.
     priority: The priority of the event handler.
+    event_type: The event type of the event handler.
+    keys: The keys of the event handler. May be empty.
   """
-
-  def __init__(
-    self, _system: 'System', _callback: '_Callback', _name: str, _priority: Any,
-    _event_type: type, _keys: frozenset[Hashable]
-  ):
-    self.system = _system
-    self.callback = _callback
-    self.name = _name
-    self.priority = _priority
-    self.event_type = _event_type
-    self.keys = _keys
-
-  @property
-  def key(self):
-    """The single key of the event handler, if applicable.
-
-    Often, a key event handler only has a single key.
-    Raises ValueError if there is not exactly 1 key in keys.
-    """
-    [key] = self.keys
-    return key
