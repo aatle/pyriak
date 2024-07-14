@@ -98,9 +98,25 @@ class Space:
     return self.entities.query(*component_types, merge=merge)
 
   def process(self, event: object, /) -> bool:
-    """Syntactic sugar for self.systems.process().
+    """Immediately invoke event handlers for an event.
 
-    ...
+    Syntactic sugar for self.systems.process().
+    See SystemManager.process() documentation for more details.
+
+    The difference between process() and post() is that process()
+    is synchronous and blocks until the event has been processed,
+    while post() is asynchronous, deferring the event to the event queue
+    to eventually be processed.
+    Since post() only puts events on a queue, it is non-blocking.
+
+    Args:
+      event: The event to process.
+
+    Returns:
+      True if event processing was stopped by a callback, False otherwise.
+
+    Raises:
+      RuntimeError: If the SystemManager's space is None or deleted.
     """
     return self.systems.process(event)
 
