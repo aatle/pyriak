@@ -172,11 +172,11 @@ class _Components:
     entities = manager._entities
     return (
       entities[entity_id][component_type]
-      for entity_id in manager._component_types.get(component_type, ())
+      for entity_id in manager._type_cache.get(component_type, ())
     )
 
   def types(self) -> KeysView[type]:
-    return self._manager()._component_types.keys()
+    return self._manager()._type_cache.keys()
 
   def __iter__(self) -> Iterator[object]:
     for entity in self._manager():
@@ -190,7 +190,7 @@ class _Components:
     return sum([len(entity) for entity in self._manager()])
 
   def __contains__(self, obj: object, /):
-    return obj in self._manager()._component_types
+    return obj in self._manager()._type_cache
 
 
 class EntityManager:
@@ -215,7 +215,7 @@ class EntityManager:
       This is usually assigned the space's event queue.
   """
 
-  __slots__ = '_entities', '_component_types', 'components', 'event_queue', '__weakref__'
+  __slots__ = '_entities', '_type_cache', 'components', 'event_queue', '__weakref__'
 
   def __init__(
     self, entities: Iterable[Entity] = (), /, event_queue: EventQueue | None = None
@@ -234,7 +234,7 @@ class EntityManager:
     self.event_queue = event_queue
     self.components = _Components(self)
     self._entities: dict[EntityId, Entity] = {}
-    self._component_types: dict[type, set[EntityId]] = {}
+    self._type_cache: dict[type, set[EntityId]] = {}
     self.add(*entities)
 
   def add(self, *entities: Entity) -> None:
@@ -256,7 +256,7 @@ class EntityManager:
     Raises:
       RuntimeError: If one of the entities is added to another manager.
     """
-    component_types = self._component_types
+    component_types = self._type_cache
     self_entities = self._entities
     self_weakref: weakref[EntityManager] = weakref(self)
     event_queue = self.event_queue
@@ -312,7 +312,7 @@ class EntityManager:
     Raises:
       ValueError: If one of the entities is not in self.
     """
-    component_types = self._component_types
+    type_cache = self._type_cache
     event_queue = self.event_queue
     for entity in entities:
       entity_id = entity.id
@@ -322,10 +322,10 @@ class EntityManager:
         raise ValueError(entity) from None
       entity._manager = dead_weakref
       for component_type in entity.types():
-        component_type_entities = component_types[component_type]
+        component_type_entities = type_cache[component_type]
         component_type_entities.remove(entity_id)
         if not component_type_entities:
-          del component_types[component_type]
+          del type_cache[component_type]
       if event_queue is not None:
         event_queue.extend([
           EntityRemoved(entity),
@@ -365,13 +365,13 @@ class EntityManager:
     if not component_types:
       raise TypeError('expected at least one component type')
     self_entities = self._entities
-    self_component_types = self._component_types
+    type_cache = self._type_cache
     return QueryResult(
       {
         id: self_entities[id]
         for id in merge(*[
-          self_component_types[typ]  # noqa: SIM401
-          if typ in self_component_types else set()
+          type_cache[typ]  # noqa: SIM401
+          if typ in type_cache else set()
           for typ in component_types
         ])
       },
@@ -400,7 +400,7 @@ class EntityManager:
     """
     entities = self._entities
     return (
-      entities[entity_id] for entity_id in self._component_types.get(component_type, ())
+      entities[entity_id] for entity_id in self._type_cache.get(component_type, ())
     )
 
   def __getitem__(self, entity_id: EntityId, /) -> Entity:
@@ -448,7 +448,7 @@ class EntityManager:
     """
     if component_type is None:
       return self._entities.keys()
-    return set(self._component_types.get(component_type, ()))
+    return set(self._type_cache.get(component_type, ()))
 
   def __iter__(self):
     return iter(self._entities.values())
@@ -469,18 +469,18 @@ class EntityManager:
 
   def _component_added(self, entity: Entity, component: object, /) -> None:
     try:
-      self._component_types[type(component)].add(entity.id)
+      self._type_cache[type(component)].add(entity.id)
     except KeyError:
-      self._component_types[type(component)] = {entity.id}
+      self._type_cache[type(component)] = {entity.id}
     event_queue = self.event_queue
     if event_queue is not None:
       event_queue.append(ComponentAdded(entity, component))
 
   def _component_removed(self, entity: Entity, component: object, /) -> None:
-    entity_ids = self._component_types[type(component)]
+    entity_ids = self._type_cache[type(component)]
     entity_ids.remove(entity.id)
     if not entity_ids:
-      del self._component_types[type(component)]
+      del self._type_cache[type(component)]
     event_queue = self.event_queue
     if event_queue is not None:
       event_queue.append(ComponentRemoved(entity, component))
