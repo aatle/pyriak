@@ -1,3 +1,5 @@
+"""This module implements the SystemManager class."""
+
 __all__ = ['SystemManager']
 
 from collections.abc import Hashable, Iterable, Iterator
@@ -22,23 +24,30 @@ if TYPE_CHECKING:
 
 
 class _EventHandler(NamedTuple):
-  """Object that holds the info for a single event handler callback in a SystemManager.
+  """Internal object that holds info for a single SystemManager event handler.
 
-  A function on a system can be bound to event types. If a function is bound
-  to at least one event type (most common is just one), then it is an event handler
-  callback. A binding (of an event type), its info (keys and priority),
-  and the callback are considered one event handler.
-  There is usually a separate event handler object for event type for each callback.
-  However, if a function is bound to multiple event types with the same priority object,
-  then the event handler object is shared (implementation detail). Here, keys do
-  not affect sharing because it is not kept in the event handler object.
-  This is a common case for callbacks with multiple bindings because a callback
-  is only a single function, so its event types must usually be very similar and
-  therefore their priority is similar. (Otherwise, it would be two separate callbacks.)
+  A function on a system can be bound to event types.
+  This creates a 'binding' on the system.
+  There may be multiple event handlers per binding, each bound to
+  different event types and having separate priority and keys.
+  The function becomes the event handler callback for each of those handlers.
+  Most commonly, a binding only has one event handler.
+  Conceptually, an event handler consists of its event type, keys, priority,
+  callback, system, and name, and is in a manager listening for events.
+  The system, name, and callback are all shared
+  in a single binding.
+  However, this internal object only stores some of that data,
+  as other data is implied by its location in data structures.
 
-  The data stored in this object is used for invoking, sorting, and storing
-  the event handler.
-  This object stores more data than _Binding because there is less context available.
+  This object is used for invoking, sorting, and storing the event handler.
+  It is implemented as a NamedTuple, with equality and hash based on only
+  name and system.
+
+  Attributes:
+    system: The system the event handler belongs to.
+    callback: The event handler callback to be invoked.
+    name: The attribute name of the binding on the system.
+    priority: The priority of the event handler given in bind().
   """
 
   system: System
@@ -63,6 +72,23 @@ del NamedTuple
 
 
 class SystemManager:
+  """A manager and container of systems.
+
+  The SystemManager stores the systems of a space and is in charge of invoking
+  their event handlers.
+  Event processing and other system callbacks require a reference to the space,
+  so the SystemManager holds a weak reference to one.
+
+  A system is any hashable object, but it must have certain things to make it
+  useful. Defining _added_ and _removed_ functions or attributes on the system
+  executes code when a system is added or removed.
+  Use bind() to create event handlers that listen for certain event types.
+
+  Attributes:
+    event_queue: The optional event queue that the SystemManager may post to.
+      This is usually assigned the space's event queue.
+  """
+
   __slots__ = (
     '_space', '_systems', '_handlers', '_key_handlers', 'event_queue', '__weakref__'
   )
@@ -76,6 +102,16 @@ class SystemManager:
     space: 'Space | None' = None,
     event_queue: EventQueue | None = None
   ):
+    """Initialize the SystemManager with systems, space, and event queue.
+
+    By default, the SystemManager is initialized with no systems, event queue
+    as None, and space as None.
+
+    Args:
+      systems: The iterable of initial systems. Defaults to no systems.
+      space: The space to use in system callbacks.
+      event_queue: The event queue to post to. Defaults to None.
+    """
     self.space = space
     self.event_queue = event_queue
     # values aren't used: dict is for insertion order
@@ -85,11 +121,28 @@ class SystemManager:
     self.add(*systems)
 
   def process(self, event: object, /) -> bool:
-    """Handle an event. Callbacks of the event are passed space and event.
+    """Invoke system event handlers for an event.
 
-    If the Event type has no binds, do nothing.
-    If a callback returns a truthy value, the
-    rest of the callbacks are skipped and True is returned, else False.
+    Event handlers listen for events of a specific type.
+    Optionally, they can require event keys.
+    Each event handler callback is called in order of priority.
+
+    The SystemManager's space attribute must not be None.
+
+    If the event type has no event handlers, nothing happens.
+
+    If a callback returns a truthy value, the rest of the callbacks
+    are skipped and True is returned.
+    If no callback returns a truthy value, False is returned.
+
+    Args:
+      event: The event to process.
+
+    Raises:
+      RuntimeError: If self's space is None or deleted.
+
+    Returns:
+      True if event processing was stopped by a callback, False otherwise.
     """
     space = self.space
     if space is None:
@@ -100,26 +153,22 @@ class SystemManager:
     return False
 
   def add(self, *systems: System) -> None:
-    """[[Add systems, their priorities, and systems' event binds to self, from objs.
+    """Add an arbitrary number of systems and their event handlers to self.
 
-    Each obj in objs can be:
-    - an argument to be passed into dict(), to construct a dictionary
-      with items of System for key and priority for value.
-      Any priorities that are None are replaced with
-      its corresponding System's default priority.
-    - else (dict construction fails), a System,
-      whose priority will be its default priority.
+    The systems are added one at a time.
+    Any hashable object is a valid system.
 
-    The order in which the Systems are added is that Systems from the first objs
-    are added first.
+    If the system is already in self, it is skipped.
 
-    Adding or removing a system is expensive because of the
-    binding or unbinding of event bind system callbacks.
-    This is so that triggering events is fast.
-    Any Systems already in self have their priority updated (and event binds rebound),
-    and don't trigger SystemAdded event.
-    Systems not already in self get their _added_ method
-    invoked right after they are added and bound.]]
+    If self's event queue is not None, a SystemAdded event is generated,
+    followed by EventHandlerAdded events for its event handlers.
+
+    If self's space is not None and the system has an _added_ attribute,
+    the attribute is called with the space as the only argument.
+    This callback can be used to initialize any necessary things for the system.
+
+    Args:
+      *systems: The systems to be added.
     """
     self_systems = self._systems
     bind = self._bind
@@ -140,11 +189,25 @@ class SystemManager:
         added(space)
 
   def remove(self, *systems: System) -> None:
-    """Remove systems and their event handlers from self.
+    """Remove an arbitrary number of systems and their event handlers from self.
 
-    Removing Systems is expensive (see SystemManager.add method for why).
-    Right after a System is removed and unbound, its _removed_ method invoked.
-    Raises KeyError if any of the systems are not in self.
+    The systems are removed one at a time.
+
+    If the system is not in self, a KeyError is raised, preventing the rest
+    of the systems from being removed.
+
+    If self's event queue is not None, a SystemRemoved event is generated,
+    followed by EventHandlerRemoved events for its event handlers.
+
+    If self's space is not None and the system has a _removed_ attribute,
+    the attribute is called with the space as the only argument.
+    This callback can be used to remove anything tied to the system.
+
+    Args:
+      *systems: The systems to be removed.
+
+    Raises:
+      KeyError: If one of the systems is not in self.
     """
     self_systems = self._systems
     unbind = self._unbind
@@ -163,13 +226,23 @@ class SystemManager:
         removed(space)
 
   def discard(self, *systems: System) -> None:
+    """Remove systems, skipping any not in self.
+
+    This method is the same as remove(), with one difference:
+    it does not raise an exception when a system is missing from self.
+    Instead, the system is skipped.
+
+    See documentation of remove() for more info.
+
+    Args:
+      *systems: The systems to be removed if in self.
+    """
     self_systems = self._systems
     for system in systems:
       if system in self_systems:
         self.remove(system)
 
   def __iter__(self):
-    """Return an iterator of all systems in self, in the order they were added."""
     return iter(self._systems)
 
   def __reversed__(self):
@@ -179,15 +252,13 @@ class SystemManager:
     return len(self._systems)
 
   def __contains__(self, obj: object, /):
-    """Return whether obj is a system added to self."""
     return obj in self._systems
 
   def clear(self) -> None:
     """Remove all systems and event handlers from self.
 
-    Does not trigger any events.
-    Does not invoke System._removed_ method.
-    Does not change self's space or event_queue.
+    Does not trigger any events or invoke _removed_ callbacks.
+    Does not affect self's space or event_queue.
     """
     self._handlers.clear()
     self._key_handlers.clear()
@@ -195,6 +266,15 @@ class SystemManager:
 
   @property
   def space(self) -> 'Space | None':
+    """The space to be used in system callbacks.
+
+    A weak reference to the space is kept.
+    The space may be None, possibly because of a dead weak reference.
+
+    A space is required for processing events.
+    A space is needed for _added_ and _removed_ callbacks, which
+    are skipped if there is no space available.
+    """
     return self._space()
 
   @space.setter
