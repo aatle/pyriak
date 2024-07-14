@@ -29,7 +29,7 @@ from pyriak.eventkey import set_key as _set_key
 
 if TYPE_CHECKING:
   from pyriak import System
-  from pyriak.bind import BindingWrapper, _Callback
+  from pyriak.bind import Binding, _Callback
   from pyriak.entity import Entity
   from pyriak.system_manager import _EventHandler
 
@@ -162,7 +162,7 @@ def _handler_key(event: 'EventHandlerAdded | EventHandlerRemoved') -> type:
 
 class _EventHandlerEvent:
   def __init__(
-    self, _binding: 'BindingWrapper', _handler: '_EventHandler'
+    self, _binding: 'Binding', _handler: '_EventHandler'
   ):
     self._binding = _binding
     self._handler = _handler

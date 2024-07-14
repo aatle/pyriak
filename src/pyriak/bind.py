@@ -1,6 +1,6 @@
 """This module contains the implementation for binding event handlers."""
 
-__all__ = ['bind', 'BindingWrapper', 'Binding']
+__all__ = ['bind', 'Binding']
 
 from collections.abc import Callable, Hashable, Iterable
 from functools import update_wrapper
@@ -8,7 +8,6 @@ from typing import (
   TYPE_CHECKING,
   Any,
   Generic,
-  NamedTuple,
   Protocol,
   TypeAlias,
   TypeVar,
@@ -33,34 +32,20 @@ _Callback: TypeAlias = Callable[['Space', _T], _R]
 _empty_frozenset: frozenset[object] = frozenset()
 
 
-class Binding(NamedTuple):
-  """A Binding holds info from one call to bind().
+class Binding(Generic[_T, _R]):
+  """A Binding wraps the event handler callback with its bindings.
 
-  Attributes:
-    event_type: The event type bound to the handler.
-    priority: The priority of the handler for this event type.
-    keys: The frozenset of event keys that the handler be triggered by.
-      Often empty, or only containing one key.
-  """
-  event_type: type
-  priority: Any
-  keys: frozenset[Hashable]
+  bind() returns a Binding. When a system is added to a SystemManager,
+  it searches the system for attributes of type Binding.
 
-
-class BindingWrapper(Generic[_T, _R]):
-  """A BindingWrapper wraps the event handler callback with its bindings.
-
-  bind() returns a BindingWrapper. When a system is added to a SystemManager,
-  it searches the system for attributes of type BindingWrapper.
-
-  BindingWrapper forwards calls to the internal callback.
-  BindingWrapper supports descriptor access by redirecting it to the internal
+  Binding forwards calls to the internal callback.
+  Binding supports descriptor access by redirecting it to the internal
   callback. This is to allow instance methods to be properly invoked as a
   bound method (for the self argument), if the callback was a function
   in a class.
 
   Attributes:
-    _callback_: The event handler callback wrapped by the BindingWrapper.
+    _callback_: The event handler callback wrapped by the Binding.
     _event_type_: The event type bound to the handler.
     _priority_: The priority of the handler for this event type.
     _keys_: The frozenset of event keys that the handler be triggered by.
@@ -100,10 +85,10 @@ class BindingWrapper(Generic[_T, _R]):
 class _Decorator(Protocol, Generic[_T]):
   @overload
   def __call__(
-    self, callback: BindingWrapper[_S, _R], /
-  ) -> BindingWrapper[_S | _T, _R]: ...
+    self, callback: Binding[_S, _R], /
+  ) -> Binding[_S | _T, _R]: ...
   @overload
-  def __call__(self, callback: _Callback[_T, _R], /) -> BindingWrapper[_T, _R]: ...
+  def __call__(self, callback: _Callback[_T, _R], /) -> Binding[_T, _R]: ...
 
 
 @overload
@@ -153,7 +138,7 @@ def bind(event_type, priority, /, *, key=_SENTINEL, keys=_SENTINEL):
     keys: Defaults to no keys. The keys that events must have any of.
 
   Returns:
-    A BindingWrapper instance that allows SystemManager to recognize bindings.
+    A Binding instance that allows SystemManager to recognize bindings.
 
   Raises:
     TypeError: If the argument types or function call signature are incorrect.
@@ -181,7 +166,7 @@ def bind(event_type, priority, /, *, key=_SENTINEL, keys=_SENTINEL):
       f'bind(): keys were provided but no key function exists for {event_type!r}'
     )
   def decorator(callback, /):
-    if isinstance(callback, BindingWrapper):
+    if isinstance(callback, Binding):
       raise TypeError('cannot bind same object multiple times')
-    return BindingWrapper(callback, event_type, priority, keys)
+    return Binding(callback, event_type, priority, keys)
   return decorator

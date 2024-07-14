@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, NamedTuple
 from weakref import ref as weakref
 
 from pyriak import EventQueue, System, dead_weakref
-from pyriak.bind import BindingWrapper, _Callback
+from pyriak.bind import Binding, _Callback
 from pyriak.eventkey import key_functions
 from pyriak.events import (
   EventHandlerAdded,
@@ -372,12 +372,11 @@ class SystemManager:
     return (key_handlers.get(keys.pop(), handlers) if keys else handlers)[:]
 
   @staticmethod
-  def _get_bindings(system: System) -> list[tuple[BindingWrapper, _EventHandler]]:
+  def _get_bindings(system: System) -> list[tuple[Binding, _EventHandler]]:
     if type(system) is ModuleType:
       return [
         (binding, _EventHandler(system, binding._callback_, name, binding._priority_))
-        for name, binding in system.__dict__.items()
-        if isinstance(binding, BindingWrapper)
+        for name, binding in system.__dict__.items() if isinstance(binding, Binding)
       ]
     return [
       (
@@ -390,7 +389,7 @@ class SystemManager:
         )
       )
       for name in dict.fromkeys(dir(system))  # remove duplicates
-      if isinstance(binding:=getattr_static(system, name), BindingWrapper)
+      if isinstance(binding:=getattr_static(system, name), Binding)
     ]
 
   def _bind(self, system: System, /) -> list[EventHandlerAdded]:
