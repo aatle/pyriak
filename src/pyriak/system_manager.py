@@ -282,21 +282,25 @@ class SystemManager:
     self._space = dead_weakref if value is None else weakref(value)
 
   @staticmethod
-  def _insert_handler(list: list[_EventHandler], handler: _EventHandler, /) -> None:
-    """Inserts a handler into a list of other handlers.
+  def _insert_handler(lst: list[_EventHandler], handler: _EventHandler, /) -> None:
+    """Insert a handler into a list of other handlers.
 
-    Sorts by: highest priority, then oldest in manager
+    Sorts by: highest priority, then oldest in manager.
+
+    Args:
+      lst: The list of handlers to add the handlers to.
+      handler: The handler to be inserted into the list.
     """
     priority = handler.priority
     lo = 0
-    hi = len(list)
+    hi = len(lst)
     while lo < hi:
       mid = (lo + hi) // 2
-      if list[mid].priority < priority:
+      if lst[mid].priority < priority:
         hi = mid
       else:
         lo = mid + 1
-    list.insert(lo, handler)
+    lst.insert(lo, handler)
 
   class _SortKey:
     __slots__ = 'handler', 'systems'
@@ -333,7 +337,9 @@ class SystemManager:
   def _sort_handlers(
     self, handlers: Iterable[_EventHandler], /
   ) -> list[_EventHandler]:
-    """Return a sorted list of handlers.
+    """Sort and return an iterable of handlers.
+
+    Duplicate handlers are removed before sorting.
 
     Sorts by, in order:
     - highest priority
@@ -341,6 +347,12 @@ class SystemManager:
     - (same system) order the handlers were added in
       - if system is module instance, then order created
       - otherwise, alphabetical names
+
+    Args:
+      handlers: The iterable of event handlers to be sorted.
+
+    Returns:
+      A new list of sorted handlers from the original handlers.
     """
     SortKey = self._SortKey
     systems = self._systems
@@ -397,6 +409,12 @@ class SystemManager:
 
     Handlers of one event type are sorted by highest priority,
     then oldest system, then first one created in manager.
+
+    Args:
+      system: The system that was added, and to create handlers from.
+
+    Returns:
+      A list of EventHandlerAdded events to be posted.
     """
     all_handlers = self._handlers
     all_key_handlers = self._key_handlers
@@ -439,6 +457,12 @@ class SystemManager:
 
     If an event type no longer has any handlers, it is removed.
     This also applies to keys with handlers.
+
+    Args:
+      system: The system that was removed, to remove handlers for.
+
+    Returns:
+      A list of EventHandlerRemoved events to be posted.
     """
     all_handlers = self._handlers
     all_key_handlers = self._key_handlers
