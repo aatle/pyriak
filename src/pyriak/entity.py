@@ -186,6 +186,9 @@ class Entity:
       return self._components == other._components
     return NotImplemented
 
+  def __repr__(self):
+    return f'{type(self).__name__}({list(self)})'
+
   def clear(self) -> None:
     self.remove(*self)
 
