@@ -133,10 +133,10 @@ def bind(event_type, priority, /, *, key=_SENTINEL, keys=_SENTINEL):
   Raises:
     TypeError: If the argument types or function call signature are incorrect.
       If `event_type` is not a type object and hashable.
+      If key(s) were provided but the event type doesn't have a key function.
       If both `key` and `keys` keyword arguments are passed in.
       If any of the keys provided are not hashable.
       In the decorator, if the object is already a binding.
-    ValueError: If key(s) were provided but the event type doesn't have a key function.
 
   Example:
     Typical usage of bind() decorator::
@@ -158,7 +158,7 @@ def bind(event_type, priority, /, *, key=_SENTINEL, keys=_SENTINEL):
   else:
     keys = frozenset(keys) if keys is not _SENTINEL else _empty_frozenset
   if keys and event_type not in key_functions:
-    raise ValueError(
+    raise TypeError(
       f'bind(): keys were provided but no key function exists for {event_type!r}'
     )
   def decorator(callback, /):
