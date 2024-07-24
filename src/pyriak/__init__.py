@@ -107,9 +107,9 @@ def tagclass(cls: type) -> type:
     return hash((type(self),))
   def __repr__(self):
     return f'{type(self).__name__}()'
-  cls.__eq__ = __eq__  # type: ignore[method-assign, assignment]
-  cls.__hash__ = __hash__  # type: ignore[method-assign, assignment]
-  cls.__repr__ = __repr__  # type: ignore[method-assign, assignment]
+  cls.__eq__ = __eq__  # type: ignore[assignment]
+  cls.__hash__ = __hash__  # type: ignore[assignment]
+  cls.__repr__ = __repr__  # type: ignore[assignment]
   return cls
 
 
