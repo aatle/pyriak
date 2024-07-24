@@ -82,6 +82,7 @@ def tagclass(cls: type) -> type:
   and has extra features:
   - __eq__: True for objects of the exact same type, else NotImplemented
   - __hash__: same for all objects of the exact same type
+  - __repr__: a string to represent instances
   - __slots__: empty tuple if not already present in namespace, saving memory
 
   Args:
@@ -104,8 +105,11 @@ def tagclass(cls: type) -> type:
     return NotImplemented
   def __hash__(self):
     return hash((type(self),))
+  def __repr__(self):
+    return f'{type(self).__name__}()'
   cls.__eq__ = __eq__  # type: ignore[method-assign, assignment]
   cls.__hash__ = __hash__  # type: ignore[method-assign, assignment]
+  cls.__repr__ = __repr__  # type: ignore[method-assign, assignment]
   return cls
 
 
