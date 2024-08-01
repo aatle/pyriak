@@ -41,15 +41,9 @@ __all__ = [
   'set_key',
 ]
 
-from collections.abc import (
-  Hashable as _Hashable,
-  MutableSequence as _MutableSequence,
-)
+from collections.abc import Hashable as _Hashable, MutableSequence as _MutableSequence
 from enum import Enum as _Enum
-from typing import (
-  Any as _Any,
-  TypeAlias as _TypeAlias,
-)
+from typing import Any as _Any, TypeAlias as _TypeAlias
 from weakref import ref as _weakref
 
 
