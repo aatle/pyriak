@@ -39,7 +39,6 @@ __all__ = [
   'EventQueue',
   'key_functions',
   'set_key',
-  'tagclass',
 ]
 
 from collections.abc import (
@@ -67,50 +66,6 @@ EventQueue: _TypeAlias = _MutableSequence[object]
 
 
 dead_weakref: _weakref[_Any] = _weakref(set())
-
-
-def tagclass(cls: type) -> type:
-  """Decorate a class for featureless instances that can serve as 'tags'.
-
-  Certain components, states, and events might not need to carry any
-  data; their mere presence is the information.
-
-  This function, usually used as a decorator on an empty class,
-  is a way to automatically create a class for this purpose.
-
-  The returned class is a new class with the same bases and namespace,
-  and has extra features:
-  - __eq__: True for objects of the exact same type, else NotImplemented
-  - __hash__: same for all objects of the exact same type
-  - __repr__: a string to represent instances
-  - __slots__: empty tuple if not already present in namespace, saving memory
-
-  Args:
-    cls: The class to derive name, bases, and namespace from.
-
-  Returns:
-    A new class derived from the original, whose instances are intended as tags.
-  """
-  namespace = dict(cls.__dict__)
-  namespace.setdefault('__slots__', ())
-  namespace.pop('__dict__', None)
-  namespace.pop('__weakref__', None)
-  qualname = getattr(cls, '__qualname__', None)
-  cls = type(cls)(cls.__name__, cls.__bases__, namespace)
-  if qualname is not None:
-    cls.__qualname__ = qualname
-  def __eq__(self, other):
-    if other is self or type(other) is type(self):
-      return True
-    return NotImplemented
-  def __hash__(self):
-    return hash((type(self),))
-  def __repr__(self):
-    return f'{type(self).__name__}()'
-  cls.__eq__ = __eq__  # type: ignore[assignment]
-  cls.__hash__ = __hash__  # type: ignore[assignment]
-  cls.__repr__ = __repr__  # type: ignore[assignment]
-  return cls
 
 
 class _Sentinel(_Enum):
