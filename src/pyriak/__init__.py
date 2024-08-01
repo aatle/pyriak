@@ -71,4 +71,4 @@ from pyriak.space import Space  # noqa: E402
 
 
 # cleanup namespace
-del _MutableSequence, _Enum, _weakref
+del _Hashable, _MutableSequence, _Enum, _weakref
