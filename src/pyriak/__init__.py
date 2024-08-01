@@ -49,14 +49,8 @@ from enum import Enum as _Enum
 from typing import (
   Any as _Any,
   TypeAlias as _TypeAlias,
-  TypeVar as _TypeVar,
 )
 from weakref import ref as _weakref
-
-
-_TypeT = _TypeVar('_TypeT', bound=type)
-_T = _TypeVar('_T')
-_D = _TypeVar('_D')
 
 
 System: _TypeAlias = _Hashable
@@ -83,4 +77,4 @@ from pyriak.space import Space  # noqa: E402
 
 
 # cleanup namespace
-del _MutableSequence, _Enum, _TypeVar, _weakref
+del _MutableSequence, _Enum, _weakref
