@@ -62,13 +62,16 @@ def _component_type_key(event: 'ComponentAdded | ComponentRemoved') -> type:
 
 @_set_key(_component_type_key)
 class ComponentAdded:
-  """An event for when a component is added to an entity.
+  """An event for when a component is added to the EntityManager.
+
+  Either, a component is added to an entity that is in the manager,
+  or an entity with existing components is added to the manager.
 
   The event key is the type of the component.
 
   Attributes:
-    entity: The entity that the component was added to.
-    component: The component added to the entity.
+    entity: The entity that the component is in.
+    component: The component added.
   """
 
   def __init__(self, entity: 'Entity', component: object):
@@ -78,13 +81,17 @@ class ComponentAdded:
 
 @_set_key(_component_type_key)
 class ComponentRemoved:
-  """An event for when a component is removed from an entity.
+  """An event for when a component is removed from the EntityManager.
+
+  Either, a component is removed from an entity that is in the manager,
+  or an entity with components is removed from the manager.
+  For the latter case, the component may still be on the entity.
 
   The event key is the type of the component.
 
   Attributes:
-    entity: The entity that the component was removed from.
-    component: The component removed from the entity.
+    entity: The entity that the component was in.
+    component: The component removed.
   """
 
   def __init__(self, entity: 'Entity', component: object):
