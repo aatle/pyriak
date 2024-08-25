@@ -1,108 +1,156 @@
 # pyriak
-A lightweight implementation of Entity Component System architecture for Python.
 
-(Originally created August 2, 2022.)
+[![PyPI version](https://img.shields.io/pypi/v/pyriak?color=blue)](https://pypi.org/project/pyriak)
+[![License](https://img.shields.io/pypi/l/pyriak.svg)](https://pypi.org/project/pyriak)
+[![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](https://github.com/python/mypy)
+[![Linting: Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+
+Pyriak is a lightweight Python implementation of Entity Component System (ECS) architecture.
+
+ECS is an alternative paradigm to object-oriented programming,
+emphasizing composition and data oriented design.
+This can help with structuring complex programs, especially in game development.
 
 
-## Concepts
-Object oriented programming is used for many projects.
-In larger, more complex projects, it can have some shortcomings.
-The inheritance hierarchies can become messy and inflexible,
-forcing the base classes to grow in size when code reuse is needed.
+## Installation
+```
+pip install pyriak
+```
+
+
+## ECS implementation
+There are many different styles of ECS depending on its goals.
+
+This implementation focuses on development speed, ease of use, and architecture,
+rather than performance, aligning with the principles of python.
+
+- Entities are concrete component containers that have an ID.
+  - Components can be any object, and do not reference their entity.
+- Systems are collections of event handlers, and are typically
+  implemented as modules with functions.
+- Event handlers are the main control flow, invoked by processing events.
+  - Events can be any object, and are put in the event queue
+    or processed immediately.
+- All resources are added to managers, and these managers are joined
+  together with a Space object.
+- For convenience, there is an entity-like manager that contains states,
+  which are essentially global or singleton components.
 
 
 ## Usage
+In your main file, create a `Space` instance. It will encapsulate the majority of the program. With no arguments, the managers are created automatically.\
+The three managers are `space.systems`, `space.entities`, and `space.states`. The `Space` also has an event queue object, `space.event_queue`.
+```python
+# main.py
+from pyriak import Space
 
-
-
-### Entity creation
-Any entity must first be created and populated with components.
-
-A system can directly create and populate an entity.
-This system may decide itself to create an entity, or handle an event that
-directly tells it to create one.
-```py
-player = space.entities.create(
-  components.Player(),
-  components.CameraFocus(),
-  components.Sprite(),
-)
-```
-A listening system can extend a created entity.
-```py
-@bind(ComponentAdded, 200, RocketBooster)
-def add_rocket_exhaust(space, event):
-  event.entity.add(ParticleEmitter(rocket_particles))
+space = Space()
 ```
 
-Often, multiple systems will need to create a certain set of components that are not
-related enough to put under a single component, but common enough to necessitate code reuse.
-A dedicated module can provide functions that
-produce a "batch", a set of components, sometimes with parameters for customization.
-```py
-# batches.py
-def spaceship(radius=20):
-  body = components.Body(radius)
-  body.collision_type = 'spaceship'
-  return body, components.Engine(), components.Sprite(spaceship_sprite)
+The raw data is stored as components, states, and events. For these objects, define small classes with miminal functionality/code, comparable to structs in other languages.\
+`dataclasses` and similar packages or modules are especially convenient for writing these.
+```python
+@dataclass
+class Health:
+    max_value: float
+    value: float = 0.0
+```
+Entities hold the components, and can be created with the entity manager's `create()` method, or manually with the constructor (must be added to the manager).\
+It is not a good idea to hold direct entity references within components or states. Each entity has a unique `.id` attribute that should be used as a stored reference instead.
+```python
+enemy = Entity([Health(50.0)])
+space.entities.add(enemy)
+
+player = space.entities.create(Health(100.0))
+enemy.add(Target(player.id))
+```
+
+Components and states can be accessed through their owner with square bracket (subscript) notation, with the class of the component or state, like a mapping.
+For entities, their id is used.
+```
+enemy[Health].value -= 20.5
+total_seconds = space.states[Time].elapsed
+del entity[Sprite]
+del space.entities[enemy.id]
+```
+
+Systems, which hold the logic and behavior, are most often implemented as module objects with functions (the module itself is the system).\
+When an event is processed, the relevant event handlers of the space are called automatically. In a system module, import the `bind()` decorator from pyriak. Define a module-level function as an event handler callback and decorate it with a call to `bind()`, with the arguments being the event type (class object) and handler priority.
+The callback takes arguments `space` and `event`. (The name of the function is not used.)
+```python
+# game_loop.py
+@bind(InitializeGame, 100)
+def run(space: Space, event: InitializeGame):
+    pass
+```
+Most event handlers should not return anything (return None).\
+The handler priority is any object that can be compared, such as an `int` instance. The priority determines the order in which handlers for the same event type are invoked, with higher priority handlers being first.
+
+The space processes events in two main ways:
+- Call `space.process(event)`, with the event as argument. This calls the event handlers immediately, so the program will not resume until the handlers are done.
+- Put the event in the space's event queue, usually with `space.post(event)`. Then, take and process events from the queue with `space.pump()`.
+  - `space.pump()`, with no arguments, consumes events from the queue until it is empty. Note that more events may be posted during it.
+Which method to use depends on if behavior needs to execute immediately (synchronous), or can be deferred (asynchronous).
+```python
+# game_loop.py
+@bind(InitializeGame, 100)
+def run(space: Space, event: InitializeGame):
+    while not space.states[GameLoop].stop_game:
+        space.post(UpdateGame(dt))
+        space.pump()
+        space.post(RenderGame())
+        space.pump()
+```
+
+For the handlers of a system to work, the system **must** be added to the space's `SystemManager`.
+Forgetting to add a new system after writing it is a common mistake.\
+Import the system module and add it to `space.systems`.
+```python
+# main.py
+from systems import game_loop
 ...
+space.systems.add(game_loop)
 ```
-```py
-# systems/player.py
-import batches
-...
-player = space.entities.create(
-  *batches.spaceship(),
-  components.CameraFocus(),
-  components.PlayerController()
-)
-enemy = space.entities.create(
-  *batches.spaceship(),
-  components.AIController()
-)
+
+Systems may optionally define callbacks `_added_()` and `_removed_()` that are invoked when the system is added to or removed from a `SystemManager`.\
+The return value is ignored.
+```python
+# game_loop.py
+def _added_(space: Space):
+    space.states.add(states.GameLoop(FPS))
 ```
-It is also easy to customize or initialize the components after the entity and batch have been created
-as opposed to passing in customization parameters to the batch function.
 
-Small, individual components may be created directly by systems.
-Batch functions should only be made when necessary, for when it is likely to be reused:
-repeated at least twice, lots of boilerplate.
-Batch functions should not be made for a large, unique set of components for a specific entity.
-It is preferable to have smaller batches to allow for more control in choosing which components to use.
+In ECS, systems need to access components in bulk. This can be done with the `space.query()` method, which takes any number of component types as arguments.
+The return value is an object with methods to access the data, such as `.zip()`.
+```
+@bind(events.UpdateGame)
+def update_physics(space: Space, event: events.UpdateGame)
+    for position, velocity, acceleration in space.query(
+      components.Position, components.Velocity, components.Acceleration
+    ).zip():
+        velocity += acceleration
+        position += velocity
+```
 
-A batch function that calls another batch function mimics inheritance, which can lead to
-avoidable problems.
-Batches should be considered large components, not a standalone pseudo-class.
-(However, a batch function that *only* calls other batch functions is fine because it
-does not create any components itself, so its use is not directly required by anything.)
+Those are all of the basic features needed to write a program with pyriak.
 
-Also note that the components should represent one, indivisible thing.
-Components can be created large and then later broken down into a batch of multiple components.
- 
 
-## TO DO:
-- `__future__.annotations`
-- dynamic handlers?
-- 3.11 typing features
-- type aliases
-- 'direct', 'indirect', 'strict', 'immediate' vocab docs
-- sys mgr expose handlers + bind predicate/filter?
-- `__contains__` TypeError raise?
-- picklable `__setstate__ __getstate__ __copy__` classes
-- 'processor' game pump generator yield event method, 'event loop'?
-- discard method
-- keys method (for dict protocol)?
-- views, items methods: mappingproxy
-- improve error messages
-- raise from None bad
-- `__eq__`, remove `__hash__`: mgrs
-- entities from ids: itertools helpers in entitymgr
-- more container (set) dunder methods, operations
-- copy methods
-- .has() method (for component, state, entity)?
-- more positional only arguments
-- str and repr methods all
-- place documentation in code, along with all rules
-- optimization through profiling, scalene (in a game)
-- make imported module variables private (consistency)
-- review and rewrite readme.txt
+## When to use pyriak?
+This package is only intended for complex, interconnected programs, especially games, which could benefit from events and data/logic separation.
+Since pyriak is written in python, it does not offer any performance benefits over other paradigms.
+For small programs with not many moving parts, ECS is overkill and can be slower to write.
+
+
+## Installing from source
+Pyriak has no package dependencies, and its source is entirely python.
+The source can be installed and used, without any building or set-up.
+```
+pip install -U git+https://github.com/aatle/pyriak.git
+```
+
+
+## Help
+Currently, all available resources are in the [pyriak GitHub repo](https://github.com/aatle/pyriak).
+Create an issue if there are any concerns or problems.\
+There is no external documentation; see docstrings for information.
+In the future, an example program may be available.
