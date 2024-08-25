@@ -154,31 +154,3 @@ Currently, all available resources are in the [pyriak GitHub repo](https://githu
 Create an issue if there are any concerns or problems.\
 There is no external documentation; see docstrings for information.
 In the future, an example program may be available.
-
-
-## TO DO:
-- `__future__.annotations`
-- dynamic handlers?
-- 3.11 typing features
-- type aliases
-- 'direct', 'indirect', 'strict', 'immediate' vocab docs
-- sys mgr expose handlers + bind predicate/filter?
-- `__contains__` TypeError raise?
-- picklable `__setstate__ __getstate__ __copy__` classes
-- 'processor' game pump generator yield event method, 'event loop'?
-- discard method
-- keys method (for dict protocol)?
-- views, items methods: mappingproxy
-- improve error messages
-- raise from None bad
-- `__eq__`, remove `__hash__`: mgrs
-- entities from ids: itertools helpers in entitymgr
-- more container (set) dunder methods, operations
-- copy methods
-- .has() method (for component, state, entity)?
-- more positional only arguments
-- str and repr methods all
-- place documentation in code, along with all rules
-- optimization through profiling, scalene (in a game)
-- make imported module variables private (consistency)
-- review and rewrite readme.txt
