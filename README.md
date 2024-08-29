@@ -67,7 +67,7 @@ enemy.add(Target(player.id))
 
 Components and states can be accessed through their owner with square bracket (subscript) notation, with the class of the component or state, like a mapping.
 For entities, their id is used.
-```
+```python
 enemy[Health].value -= 20.5
 total_seconds = space.states[Time].elapsed
 del entity[Sprite]
@@ -122,7 +122,7 @@ def _added_(space: Space):
 
 In ECS, systems need to access components in bulk. This can be done with the `space.query()` method, which takes any number of component types as arguments.
 The return value is an object with methods to access the data, such as `.zip()`.
-```
+```python
 @bind(events.UpdateGame)
 def update_physics(space: Space, event: events.UpdateGame)
     for position, velocity, acceleration in space.query(
