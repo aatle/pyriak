@@ -5,6 +5,18 @@ description = "A lightweight implementation of Entity Component System architect
 authors = ["aatle <168398276+aatle@users.noreply.github.com>"]
 license = "MIT"
 readme = "README.md"
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "License :: OSI Approved :: MIT License",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Intended Audience :: Developers",
+  "Typing :: Typed",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
 
 [tool.poetry.dependencies]
 python = ">=3.10"
