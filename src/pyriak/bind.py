@@ -22,15 +22,15 @@ if TYPE_CHECKING:
 
 
 _T = TypeVar('_T')
-_R = TypeVar('_R')
+_R_co = TypeVar('_R_co', covariant=True)
 
-_Callback: TypeAlias = Callable[['Space', _T], _R]
+_Callback: TypeAlias = Callable[['Space', _T], _R_co]
 
 
 _empty_frozenset: frozenset[object] = frozenset()
 
 
-class Binding(Generic[_T, _R]):
+class Binding(Generic[_T, _R_co]):
   """A Binding wraps the event handler callback with handler info.
 
   bind() returns a Binding. When a system is added to a SystemManager,
@@ -51,11 +51,11 @@ class Binding(Generic[_T, _R]):
       Often empty, or only containing one key.
   """
 
-  __wrapped__: _Callback[_T, _R]
+  __wrapped__: _Callback[_T, _R_co]
 
   def __init__(
     self,
-    callback: _Callback[_T, _R],
+    callback: _Callback[_T, _R_co],
     event_type: type,
     priority: Any,
     keys: frozenset[Hashable],
@@ -66,10 +66,10 @@ class Binding(Generic[_T, _R]):
     self._keys_ = keys
 
   @property
-  def _callback_(self) -> _Callback[_T, _R]:
+  def _callback_(self) -> _Callback[_T, _R_co]:
     return self.__wrapped__
 
-  def __call__(self, space: 'Space', event: _T, /) -> _R:
+  def __call__(self, space: 'Space', event: _T, /) -> _R_co:
     return self._callback_(space, event)
 
   def __get__(self, obj, objtype=None):
@@ -84,15 +84,15 @@ class Binding(Generic[_T, _R]):
 @overload
 def bind(
   event_type: type[_T], priority: Any, /
-) -> Callable[[_Callback[_T, _R]], Binding[_T, _R]]: ...
+) -> Callable[[_Callback[_T, _R_co]], Binding[_T, _R_co]]: ...
 @overload
 def bind(
   event_type: type[_T], priority: Any, /, *, key: Hashable
-) -> Callable[[_Callback[_T, _R]], Binding[_T, _R]]: ...
+) -> Callable[[_Callback[_T, _R_co]], Binding[_T, _R_co]]: ...
 @overload
 def bind(
   event_type: type[_T], priority: Any, /, *, keys: Iterable[Hashable]
-) -> Callable[[_Callback[_T, _R]], Binding[_T, _R]]: ...
+) -> Callable[[_Callback[_T, _R_co]], Binding[_T, _R_co]]: ...
 def bind(event_type, priority, /, *, key=_SENTINEL, keys=_SENTINEL):
   """Bind a callback to an event type.
 
