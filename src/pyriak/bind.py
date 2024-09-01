@@ -56,7 +56,7 @@ class Binding(Generic[_T, _R_co]):
   def __init__(
     self,
     callback: _Callback[_T, _R_co],
-    event_type: type,
+    event_type: type[_T],
     priority: Any,
     keys: frozenset[Hashable],
   ):
