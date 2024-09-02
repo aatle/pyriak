@@ -58,8 +58,8 @@ class _EventHandler(NamedTuple, Generic[_T]):
   name: str
   priority: Any
 
-  def __call__(self, /, *args, **kwargs) -> Any:
-    return self.callback(*args, **kwargs)
+  def __call__(self, space: 'Space', event: _T, /) -> Any:
+    return self.callback(space, event)
 
   def __eq__(self, other: object):
     if self is other:
