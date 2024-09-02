@@ -75,6 +75,32 @@ class Entity:
 
     Each component is stored by its class.
 
+    If self already has a component of the same type, an exception
+    is raised, preventing the rest of the components from being added
+    but not affecting the ones already added.
+
+    If self is in an EntityManager, a ComponentAdded event is
+    posted in the manager event queue for each component added.
+
+    Args:
+      *components: The components to be added.
+
+    Raises:
+      KeyError: If self already has a component of the same type.
+    """
+    self_components = self._components
+    manager = self._manager()
+    for component in components:
+      component_type = type(component)
+      if component_type in self_components:
+        raise KeyError(f'{component_type} already in entity')
+      self_components[component_type] = component
+      if manager is not None:
+        manager._component_added(self, component)
+
+  def update(self, *components: object) -> None:
+    """Update self with an arbitrary number of components.
+
     If self already has an existing component of the exact same type, that
     existing component is removed right before adding the provided component
     This is unless the two components are equivalent or the same object,
@@ -85,7 +111,7 @@ class Entity:
     in the manager event queue.
 
     Args:
-      *components: The components to be added.
+      *components: The components to update self with.
     """
     self_components = self._components
     manager = self._manager()
@@ -139,6 +165,11 @@ class Entity:
 
   def __getitem__(self, component_type: type[_T], /) -> _T:
     return self._components[component_type]  # type: ignore[return-value]
+
+  def __setitem__(self, component_type: type[_T], component: _T):
+    if type(component) is not component_type:
+      raise TypeError(component)
+    self.update(component)
 
   def __delitem__(self, component_type: type, /):
     self.remove(self[component_type])

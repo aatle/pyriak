@@ -61,6 +61,34 @@ class StateManager:
 
     Each state is stored by its class.
 
+    If self already has a state of the same type, an exception
+    is raised, preventing the rest of the states from being added
+    but not affecting the ones already added.
+
+    If self's event queue is not None, a StateAdded event is
+    posted for each state added.
+
+    Args:
+      *states: The states to be added.
+
+    Raises:
+      KeyError: If self already has a state of the same type.
+    """
+    self_states = self._states
+    event_queue = self.event_queue
+    for state in states:
+      state_type = type(state)
+      if state_type in self_states:
+        raise KeyError(f'{state_type} already in state manager')
+      self_states[state_type] = state
+      if event_queue is not None:
+        event_queue.append(StateAdded(state))
+
+  def update(self, *states: object) -> None:
+    """Update self with an arbitrary number of states.
+
+    Each state is stored by its class.
+
     If self already has an existing state of the exact same type, that
     existing state is removed right before adding the provided state.
     This is unless the two states are equivalent or the same object,
@@ -70,7 +98,7 @@ class StateManager:
     generates a StateAdded and StateRemoved event, respectively.
 
     Args:
-      *states: The states to be added.
+      *states: The states to update self with.
     """
     self_states = self._states
     event_queue = self.event_queue
@@ -124,6 +152,11 @@ class StateManager:
 
   def __getitem__(self, state_type: type[_T], /) -> _T:
     return self._states[state_type]  # type: ignore[return-value]
+
+  def __setitem__(self, state_type: type[_T], state: _T):
+    if type(state) is not state_type:
+      raise TypeError(state)
+    self.update(state)
 
   def __delitem__(self, state_type: type, /):
     self.remove(self[state_type])
