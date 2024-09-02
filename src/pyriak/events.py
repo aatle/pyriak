@@ -35,7 +35,6 @@ if TYPE_CHECKING:
 
 
 _T = TypeVar('_T')
-_R_co = TypeVar('_R_co', covariant=True)
 
 
 class EntityAdded:
@@ -171,9 +170,9 @@ def _handler_key(event: 'EventHandlerAdded | EventHandlerRemoved') -> type:
   return event.event_type
 
 
-class _EventHandlerEvent(Generic[_T, _R_co]):
+class _EventHandlerEvent(Generic[_T]):
   def __init__(
-    self, _binding: 'Binding[_T, _R_co]', _handler: '_EventHandler'
+    self, _binding: 'Binding[_T, Any]', _handler: '_EventHandler'
   ):
     self._binding = _binding
     self._handler = _handler
@@ -183,7 +182,7 @@ class _EventHandlerEvent(Generic[_T, _R_co]):
     return self._handler.system
 
   @property
-  def callback(self) -> '_Callback[_T, _R_co]':
+  def callback(self) -> '_Callback[_T, Any]':
     return self._handler.callback
 
   @property
@@ -214,7 +213,7 @@ class _EventHandlerEvent(Generic[_T, _R_co]):
 
 
 @_set_key(_handler_key)
-class EventHandlerAdded(_EventHandlerEvent[_T, _R_co]):
+class EventHandlerAdded(_EventHandlerEvent[_T]):
   """An event for when a single event handler is added.
 
   When a system is added to the SystemManager, it may have bindings.
@@ -233,7 +232,7 @@ class EventHandlerAdded(_EventHandlerEvent[_T, _R_co]):
 
 
 @_set_key(_handler_key)
-class EventHandlerRemoved(_EventHandlerEvent[_T, _R_co]):
+class EventHandlerRemoved(_EventHandlerEvent[_T]):
   """An event for when a single event handler is removed.
 
   A system removed from the SystemManager may own event
