@@ -172,7 +172,7 @@ def _handler_key(event: 'EventHandlerAdded | EventHandlerRemoved') -> type:
 
 class _EventHandlerEvent(Generic[_T]):
   def __init__(
-    self, _binding: 'Binding[_T, Any]', _handler: '_EventHandler'
+    self, _binding: 'Binding[_T, Any]', _handler: '_EventHandler[_T]'
   ):
     self._binding = _binding
     self._handler = _handler

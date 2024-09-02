@@ -5,7 +5,7 @@ __all__ = ['SystemManager']
 from collections.abc import Hashable, Iterable, Iterator
 from inspect import getattr_static
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, NamedTuple
+from typing import TYPE_CHECKING, Any, Generic, NamedTuple, TypeVar
 from weakref import ref as weakref
 
 from pyriak import EventQueue, System, dead_weakref
@@ -23,7 +23,10 @@ if TYPE_CHECKING:
   from pyriak.space import Space
 
 
-class _EventHandler(NamedTuple):
+_T = TypeVar('_T')
+
+
+class _EventHandler(NamedTuple, Generic[_T]):
   """Internal object that holds info for a single SystemManager event handler.
 
   A function on a system can be bound to event types.
@@ -51,11 +54,11 @@ class _EventHandler(NamedTuple):
   """
 
   system: System
-  callback: _Callback
+  callback: _Callback[_T, Any]
   name: str
   priority: Any
 
-  def __call__(self, /, *args, **kwargs):
+  def __call__(self, /, *args, **kwargs) -> Any:
     return self.callback(*args, **kwargs)
 
   def __eq__(self, other: object):
@@ -116,8 +119,8 @@ class SystemManager:
     self.event_queue = event_queue
     # values aren't used: dict is for insertion order
     self._systems: dict[System, None] = {}
-    self._handlers: dict[type, list[_EventHandler]] = {}
-    self._key_handlers: dict[type, dict[Hashable, list[_EventHandler]]] = {}
+    self._handlers: dict[type, list[_EventHandler[Any]]] = {}
+    self._key_handlers: dict[type, dict[Hashable, list[_EventHandler[Any]]]] = {}
     self.add(*systems)
 
   def process(self, event: object, /) -> bool:
@@ -282,7 +285,9 @@ class SystemManager:
     self._space = dead_weakref if value is None else weakref(value)
 
   @staticmethod
-  def _insert_handler(lst: list[_EventHandler], handler: _EventHandler, /) -> None:
+  def _insert_handler(
+    lst: list[_EventHandler[_T]], handler: _EventHandler[_T], /
+  ) -> None:
     """Insert a handler into a list of other handlers.
 
     Sorts by: highest priority, then oldest in manager.
@@ -304,7 +309,7 @@ class SystemManager:
 
   class _SortKey:
     __slots__ = 'handler', 'systems'
-    def __init__(self, handler: _EventHandler, systems: Iterable[System], /):
+    def __init__(self, handler: _EventHandler[Any], systems: Iterable[System], /):
       self.handler = handler
       self.systems = systems
     def __lt__(self, other: 'SystemManager._SortKey', /) -> bool:
@@ -335,8 +340,8 @@ class SystemManager:
       raise ValueError
 
   def _sort_handlers(
-    self, handlers: Iterable[_EventHandler], /
-  ) -> list[_EventHandler]:
+    self, handlers: Iterable[_EventHandler[_T]], /
+  ) -> list[_EventHandler[_T]]:
     """Sort and return an iterable of handlers.
 
     Duplicate handlers are removed before sorting.
@@ -359,7 +364,7 @@ class SystemManager:
     # Uses dict to remove duplicates while preserving some order
     return sorted(dict.fromkeys(handlers), key=lambda h: SortKey(h, systems))
 
-  def _get_handlers(self, event: object, /) -> list[_EventHandler]:
+  def _get_handlers(self, event: _T, /) -> list[_EventHandler[_T]]:
     event_type = type(event)
     try:
       handlers = self._handlers[event_type]
@@ -384,7 +389,7 @@ class SystemManager:
     return (key_handlers.get(keys.pop(), handlers) if keys else handlers)[:]
 
   @staticmethod
-  def _get_bindings(system: System) -> list[tuple[Binding, _EventHandler]]:
+  def _get_bindings(system: System) -> list[tuple[Binding, _EventHandler[Any]]]:
     if type(system) is ModuleType:
       return [
         (binding, _EventHandler(system, binding._callback_, name, binding._priority_))
