@@ -22,7 +22,7 @@ __all__ = [
 ]
 
 from collections.abc import Hashable
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from pyriak.eventkey import set_key as _set_key
 
@@ -32,6 +32,10 @@ if TYPE_CHECKING:
   from pyriak.bind import Binding, _Callback
   from pyriak.entity import Entity
   from pyriak.system_manager import _EventHandler
+
+
+_T = TypeVar('_T')
+_R_co = TypeVar('_R_co', covariant=True)
 
 
 class EntityAdded:
@@ -61,7 +65,7 @@ def _component_type_key(event: 'ComponentAdded | ComponentRemoved') -> type:
 
 
 @_set_key(_component_type_key)
-class ComponentAdded:
+class ComponentAdded(Generic[_T]):
   """An event for when a component is added to the EntityManager.
 
   Either, a component is added to an entity that is in the manager,
@@ -74,13 +78,13 @@ class ComponentAdded:
     component: The component added.
   """
 
-  def __init__(self, entity: 'Entity', component: object):
+  def __init__(self, entity: 'Entity', component: _T):
     self.entity = entity
     self.component = component
 
 
 @_set_key(_component_type_key)
-class ComponentRemoved:
+class ComponentRemoved(Generic[_T]):
   """An event for when a component is removed from the EntityManager.
 
   Either, a component is removed from an entity that is in the manager,
@@ -94,7 +98,7 @@ class ComponentRemoved:
     component: The component removed.
   """
 
-  def __init__(self, entity: 'Entity', component: object):
+  def __init__(self, entity: 'Entity', component: _T):
     self.entity = entity
     self.component = component
 
@@ -136,7 +140,7 @@ def _state_type_key(event: 'StateAdded | StateRemoved') -> type:
 
 
 @_set_key(_state_type_key)
-class StateAdded:
+class StateAdded(Generic[_T]):
   """An event for when a state is added to the StateManager.
 
   The event key is the type of the state.
@@ -145,12 +149,12 @@ class StateAdded:
     state: The state added to the manager.
   """
 
-  def __init__(self, state: object):
+  def __init__(self, state: _T):
     self.state = state
 
 
 @_set_key(_state_type_key)
-class StateRemoved:
+class StateRemoved(Generic[_T]):
   """An event for when a state is removed from the StateManager.
 
   The event key is the type of the state.
@@ -159,7 +163,7 @@ class StateRemoved:
     state: The state removed from the manager.
   """
 
-  def __init__(self, state: object):
+  def __init__(self, state: _T):
     self.state = state
 
 
@@ -167,9 +171,9 @@ def _handler_key(event: 'EventHandlerAdded | EventHandlerRemoved') -> type:
   return event.event_type
 
 
-class _EventHandlerEvent:
+class _EventHandlerEvent(Generic[_T, _R_co]):
   def __init__(
-    self, _binding: 'Binding', _handler: '_EventHandler'
+    self, _binding: 'Binding[_T, _R_co]', _handler: '_EventHandler'
   ):
     self._binding = _binding
     self._handler = _handler
@@ -179,7 +183,7 @@ class _EventHandlerEvent:
     return self._handler.system
 
   @property
-  def callback(self) -> '_Callback':
+  def callback(self) -> '_Callback[_T, _R_co]':
     return self._handler.callback
 
   @property
@@ -191,7 +195,7 @@ class _EventHandlerEvent:
     return self._binding._priority_
 
   @property
-  def event_type(self) -> type:
+  def event_type(self) -> type[_T]:
     return self._binding._event_type_
 
   @property
@@ -210,7 +214,7 @@ class _EventHandlerEvent:
 
 
 @_set_key(_handler_key)
-class EventHandlerAdded(_EventHandlerEvent):
+class EventHandlerAdded(_EventHandlerEvent[_T, _R_co]):
   """An event for when a single event handler is added.
 
   When a system is added to the SystemManager, it may have bindings.
@@ -229,7 +233,7 @@ class EventHandlerAdded(_EventHandlerEvent):
 
 
 @_set_key(_handler_key)
-class EventHandlerRemoved(_EventHandlerEvent):
+class EventHandlerRemoved(_EventHandlerEvent[_T, _R_co]):
   """An event for when a single event handler is removed.
 
   A system removed from the SystemManager may own event
