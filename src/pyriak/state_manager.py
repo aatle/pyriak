@@ -72,14 +72,14 @@ class StateManager:
       *states: The states to be added.
 
     Raises:
-      KeyError: If self already has a state of the same type.
+      ValueError: If self already has a state of the same type.
     """
     self_states = self._states
     event_queue = self.event_queue
     for state in states:
       state_type = type(state)
       if state_type in self_states:
-        raise KeyError(f'{state_type} already in state manager')
+        raise ValueError(f'state manager already has state of type {state_type}')
       self_states[state_type] = state
       if event_queue is not None:
         event_queue.append(StateAdded(state))

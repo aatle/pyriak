@@ -80,11 +80,11 @@ class EventKeyFunctions:
     """Set a key function for an event type.
 
     Raises:
-      KeyError: If the event type already has a key function set.
+      ValueError: If the given event type already has a key function set.
     """
     data = self._data
     if event_type in data:
-      raise KeyError(f'cannot reassign event type key: {event_type!r}')
+      raise ValueError(f'cannot reassign key function for event type {event_type!r}')
     data[event_type] = key
 
   @overload
@@ -156,7 +156,7 @@ def set_key(key: KeyFunction[_T], /) -> Callable[[type[_T]], type[_T]]:
   Returns:
     A decorator that sets the key function on its argument
     and then returns the argument.
-    This decorator raises KeyError if the type already has a key function.
+    This decorator raises ValueError if the type already has a key function.
   """
   def decorator(cls: type[_T]) -> type[_T]:
     key_functions[cls] = key

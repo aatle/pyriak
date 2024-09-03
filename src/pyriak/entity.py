@@ -86,14 +86,14 @@ class Entity:
       *components: The components to be added.
 
     Raises:
-      KeyError: If self already has a component of the same type.
+      ValueError: If self already has a component of the same type.
     """
     self_components = self._components
     manager = self._manager()
     for component in components:
       component_type = type(component)
       if component_type in self_components:
-        raise KeyError(f'{component_type} already in entity')
+        raise ValueError(f'entity already has component of type {component_type}')
       self_components[component_type] = component
       if manager is not None:
         manager._component_added(self, component)
