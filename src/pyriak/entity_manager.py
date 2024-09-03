@@ -242,7 +242,7 @@ class EntityManager:
 
     Each entity is stored by its unique id.
 
-    If self already has the entity being added, it is skipped.
+    If self already has the entity being added, an exception is raised.
 
     If self's event queue is not None, each entity added generates
     an EntityAdded event and then a ComponentAdded event for each
@@ -254,7 +254,8 @@ class EntityManager:
       *entities: The entities to be added.
 
     Raises:
-      RuntimeError: If one of the entities is added to another manager.
+      ValueError: If self already has one of the entities.
+      RuntimeError: If one of the entities is already added to another manager.
     """
     component_types = self._type_cache
     self_entities = self._entities
@@ -263,7 +264,7 @@ class EntityManager:
     for entity in entities:
       entity_id = entity.id
       if entity_id in self_entities:
-        continue
+        raise ValueError(entity)
       if entity._manager() is not None:
         raise RuntimeError(f'{entity!r} already added to another manager')
       self_entities[entity_id] = entity
@@ -278,6 +279,22 @@ class EntityManager:
           EntityAdded(entity),
           *[ComponentAdded(entity, component) for component in entity]
         ])
+
+  def update(self, *entities: Entity) -> None:
+    """Update self with an arbitrary number of entities.
+
+    Same as add(), except that entities that are already in self
+    get skipped instead of raising an error.
+
+    Args:
+      *entities: The entities to update self with.
+
+    Raises:
+      RuntimeError: If one of the entities is in another manager.
+    """
+    for entity in entities:
+      if entity not in self:
+        self.add(entity)
 
   def create(self, *components: object) -> Entity:
     """Create and return a new Entity with components, added to self.
