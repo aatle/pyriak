@@ -245,7 +245,7 @@ class EntityManager:
     If self already has the entity being added, it is skipped.
 
     If self's event queue is not None, each entity added generates
-    an EntityAdded event, and then a ComponentAdded event for each
+    an EntityAdded event and then a ComponentAdded event for each
     component in the entity.
 
     An entity may only added to at most one manager.
@@ -303,8 +303,8 @@ class EntityManager:
     is raised, preventing the rest of the entities from being removed,
     but not affecting the entities already removed.
 
-    If self's event queue is not None, an EntityRemoved event followed
-    by ComponentRemoved events for each component are posted.
+    If self's event queue is not None, for each entity, a ComponentRemoved
+    event is posted for each component followed by an EntityRemoved event.
 
     Args:
       *entities: The entities to be removed.
@@ -328,8 +328,8 @@ class EntityManager:
           del type_cache[component_type]
       if event_queue is not None:
         event_queue.extend([
-          EntityRemoved(entity),
-          *[ComponentRemoved(entity, component) for component in entity]
+          *[ComponentRemoved(entity, component) for component in entity],
+          EntityRemoved(entity)
         ])
 
   def query(
