@@ -159,7 +159,7 @@ class SystemManager:
     The systems are added one at a time.
     Any hashable object is a valid system.
 
-    If the system is already in self, it is skipped.
+    If the system is already in self, an exception is raised.
 
     If self's event queue is not None, a SystemAdded event is generated,
     followed by EventHandlerAdded events for its event handlers.
@@ -170,12 +170,15 @@ class SystemManager:
 
     Args:
       *systems: The systems to be added.
+
+    Raises:
+      ValueError: If self already has one of the systems.
     """
     self_systems = self._systems
     bind = self._bind
     for system in systems:
       if system in self_systems:
-        continue
+        raise ValueError(f'system manager already has system {system}')
       self_systems[system] = None
       events = bind(system)
       space = self.space
@@ -189,12 +192,25 @@ class SystemManager:
           continue
         added(space)
 
+  def update(self, *systems: System) -> None:
+    """Update self with an arbitrary number of systems.
+
+    Same as add(), except that systems that are already in self
+    get skipped instead of raising an error.
+
+    Args:
+      *systems: The systems to update self with.
+    """
+    for system in systems:
+      if system not in self._systems:
+        self.add(system)
+
   def remove(self, *systems: System) -> None:
     """Remove an arbitrary number of systems and their event handlers from self.
 
     The systems are removed one at a time.
 
-    If the system is not in self, a KeyError is raised, preventing the rest
+    If the system is not in self, an exception is raised, preventing the rest
     of the systems from being removed.
 
     If self's event queue is not None, a SystemRemoved event is generated,
@@ -208,12 +224,15 @@ class SystemManager:
       *systems: The systems to be removed.
 
     Raises:
-      KeyError: If one of the systems is not in self.
+      ValueError: If one of the systems is not in self.
     """
     self_systems = self._systems
     unbind = self._unbind
     for system in systems:
-      del self_systems[system]
+      try:
+        del self_systems[system]
+      except KeyError:
+        raise ValueError(system) from None
       events = unbind(system)
       space = self.space
       event_queue = self.event_queue
