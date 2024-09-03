@@ -213,8 +213,8 @@ class SystemManager:
     If the system is not in self, an exception is raised, preventing the rest
     of the systems from being removed.
 
-    If self's event queue is not None, a SystemRemoved event is generated,
-    followed by EventHandlerRemoved events for its event handlers.
+    If self's event queue is not None, for each system, an EventHandlerRemoved
+    event is posted for each of its event handlers followed by a SystemRemoved event.
 
     If self's space is not None and the system has a _removed_ attribute,
     the attribute is called with the space as the only argument.
@@ -237,7 +237,7 @@ class SystemManager:
       space = self.space
       event_queue = self.event_queue
       if event_queue is not None:
-        event_queue.extend([SystemRemoved(system), *events])
+        event_queue.extend([*events, SystemRemoved(system)])
       if space is not None:
         try:
           removed = system._removed_  # type: ignore[attr-defined]
