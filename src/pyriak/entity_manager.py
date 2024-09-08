@@ -62,6 +62,18 @@ class QueryResult:
     return self._merge
 
   def __call__(self, component_type: type[_T], /) -> Iterator[_T]:
+    """Return an iterator of components of a type.
+
+    For each entity in the query, the component of the given type in it is yielded.
+    If an entity does not have the component type, a KeyError is
+    raised from the entity when it is reached in the iterator.
+
+    Args:
+      component_type: The type of components to get.
+
+    Returns:
+      An iterator of components of that type, from the query's entities.
+    """
     return (entity[component_type] for entity in self.entities)
 
   def zip(self, *component_types: type) -> Iterator[tuple[Any, ...]]:
