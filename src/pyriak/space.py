@@ -36,7 +36,8 @@ class Space:
   __slots__ = 'event_queue', 'systems', 'entities', 'states', '__weakref__'
 
   def __init__(
-    self, *,
+    self,
+    *,
     event_queue: EventQueue | None = None,
     systems: SystemManager | None = None,
     entities: EntityManager | None = None,

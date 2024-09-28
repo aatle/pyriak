@@ -65,7 +65,8 @@ class Entity:
     for comp in components:
       comp_type = type(comp)
       if comp_type in comp_dict and (
-          (other := comp_dict[comp_type]) is comp or other == comp):
+        (other := comp_dict[comp_type]) is comp or other == comp
+      ):
         continue
       comp_dict[comp_type] = comp
     self._components: dict[type, object] = comp_dict

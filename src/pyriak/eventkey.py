@@ -65,9 +65,7 @@ class EventKeyFunctions:
 
   __slots__ = ('_data',)
 
-  def __init__(
-    self, dict: Mapping[type, KeyFunction[Any]] | None = None
-  ):
+  def __init__(self, dict: Mapping[type, KeyFunction[Any]] | None = None):
     self._data: WeakKeyDictionary[type, KeyFunction[Any]]
     self._data = WeakKeyDictionary()
     if dict is not None:
@@ -158,7 +156,9 @@ def set_key(key: KeyFunction[_T], /) -> Callable[[type[_T]], type[_T]]:
     and then returns the argument.
     This decorator raises ValueError if the type already has a key function.
   """
+
   def decorator(cls: type[_T]) -> type[_T]:
     key_functions[cls] = key
     return cls
+
   return decorator

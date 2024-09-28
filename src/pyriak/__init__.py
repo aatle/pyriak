@@ -59,6 +59,7 @@ dead_weakref: _weakref[_Any] = _weakref(set())
 class _Sentinel(_Enum):
   SENTINEL = 1
 
+
 _SENTINEL: _Sentinel = _Sentinel.SENTINEL
 
 

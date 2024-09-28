@@ -30,9 +30,11 @@ class QueryResult:
   __slots__ = '_entities', '_types', '_merge'
 
   def __init__(
-    self, _entities: dict[EntityId, Entity],
+    self,
+    _entities: dict[EntityId, Entity],
     _types: tuple[type, ...],
-    _merge: Callable[..., set], /
+    _merge: Callable[..., set],
+    /,
   ):
     self._entities = _entities
     self._types = _types
@@ -287,10 +289,12 @@ class EntityManager:
         except KeyError:
           component_types[component_type] = {entity_id}
       if event_queue is not None:
-        event_queue.extend([
-          EntityAdded(entity),
-          *[ComponentAdded(entity, component) for component in entity]
-        ])
+        event_queue.extend(
+          [
+            EntityAdded(entity),
+            *[ComponentAdded(entity, component) for component in entity],
+          ]
+        )
 
   def update(self, *entities: Entity) -> None:
     """Update self with an arbitrary number of entities.
@@ -356,10 +360,12 @@ class EntityManager:
         if not component_type_entities:
           del type_cache[component_type]
       if event_queue is not None:
-        event_queue.extend([
-          *[ComponentRemoved(entity, component) for component in entity],
-          EntityRemoved(entity)
-        ])
+        event_queue.extend(
+          [
+            *[ComponentRemoved(entity, component) for component in entity],
+            EntityRemoved(entity),
+          ]
+        )
 
   def query(
     self, /, *component_types: type, merge: Callable[..., set] = set.intersection
@@ -398,14 +404,17 @@ class EntityManager:
     return QueryResult(
       {
         id: self_entities[id]
-        for id in merge(*[
-          type_cache[typ]  # noqa: SIM401
-          if typ in type_cache else set()
-          for typ in component_types
-        ])
+        for id in merge(
+          *[
+            type_cache[typ]  # noqa: SIM401
+            if typ in type_cache
+            else set()
+            for typ in component_types
+          ]
+        )
       },
       component_types,
-      merge
+      merge,
     )
 
   def __call__(self, component_type: type, /) -> Iterator[Entity]:

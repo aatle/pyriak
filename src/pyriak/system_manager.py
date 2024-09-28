@@ -69,7 +69,8 @@ class _EventHandler(NamedTuple, Generic[_T]):
     return NotImplemented
 
   def __hash__(self):
-    return hash((self.name,self.system))
+    return hash((self.name, self.system))
+
 
 del NamedTuple
 
@@ -93,7 +94,12 @@ class SystemManager:
   """
 
   __slots__ = (
-    '_space', '_systems', '_handlers', '_key_handlers', 'event_queue', '__weakref__'
+    '_space',
+    '_systems',
+    '_handlers',
+    '_key_handlers',
+    'event_queue',
+    '__weakref__',
   )
 
   def __init__(
@@ -101,7 +107,7 @@ class SystemManager:
     systems: Iterable[System] = (),
     /,
     space: 'Space | None' = None,
-    event_queue: EventQueue | None = None
+    event_queue: EventQueue | None = None,
   ):
     """Initialize the SystemManager with systems, space, and event queue.
 
@@ -326,9 +332,11 @@ class SystemManager:
 
   class _SortKey:
     __slots__ = 'handler', 'systems'
+
     def __init__(self, handler: _EventHandler[Any], systems: Iterable[System], /):
       self.handler = handler
       self.systems = systems
+
     def __lt__(self, other: 'SystemManager._SortKey', /) -> bool:
       handler = self.handler
       other_handler = other.handler
@@ -410,20 +418,21 @@ class SystemManager:
     if type(system) is ModuleType:
       return [
         (binding, _EventHandler(system, binding._callback_, name, binding._priority_))
-        for name, binding in system.__dict__.items() if isinstance(binding, Binding)
+        for name, binding in system.__dict__.items()
+        if isinstance(binding, Binding)
       ]
     return [
       (
         binding,
         _EventHandler(
           system,
-          c if (c:=getattr(system, name)) is not binding else binding._callback_,
+          c if (c := getattr(system, name)) is not binding else binding._callback_,
           name,
-          binding._priority_
-        )
+          binding._priority_,
+        ),
       )
       for name in dict.fromkeys(dir(system))  # remove duplicates
-      if isinstance(binding:=getattr_static(system, name), Binding)
+      if isinstance(binding := getattr_static(system, name), Binding)
     ]
 
   def _bind(self, system: System, /) -> list[EventHandlerAdded]:
@@ -492,17 +501,13 @@ class SystemManager:
     for binding, handler in self._get_bindings(system):
       event_type = binding._event_type_
       handlers = all_handlers[event_type]
-      handlers[:] = [
-        handler for handler in handlers if handler.system != system
-      ]
+      handlers[:] = [handler for handler in handlers if handler.system != system]
       if not handlers:
         del all_handlers[event_type]
       if event_type in all_key_handlers:
         key_handlers = all_key_handlers[event_type]
         for key, handlers in key_handlers.items():
-          handlers[:] = [
-            handler for handler in handlers if handler.system != system
-          ]
+          handlers[:] = [handler for handler in handlers if handler.system != system]
           if not handlers:
             del key_handlers[key]
         if not key_handlers:

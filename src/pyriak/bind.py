@@ -161,8 +161,10 @@ def bind(event_type, priority, /, *, key=_SENTINEL, keys=_SENTINEL):
     raise TypeError(
       f'bind(): keys were provided but no key function exists for {event_type!r}'
     )
+
   def decorator(callback, /):
     if isinstance(callback, Binding):
       raise TypeError('cannot bind same object multiple times')
     return Binding(callback, event_type, priority, keys)
+
   return decorator
