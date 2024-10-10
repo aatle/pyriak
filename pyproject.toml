@@ -37,7 +37,6 @@ build-backend = "poetry.core.masonry.api"
 
 
 [tool.ruff]
-indent-width = 2
 
 [tool.ruff.lint]
 select = [
@@ -61,9 +60,6 @@ select = [
   # "FURB",
 ]
 ignore = ["SIM105", "PERF203", "ISC001"]
-
-[tool.ruff.format]
-quote-style = "single"
 
 [tool.ruff.lint.isort]
 lines-after-imports = 2
