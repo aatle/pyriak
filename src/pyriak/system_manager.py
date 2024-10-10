@@ -385,10 +385,10 @@ class SystemManager:
         Returns:
             A new list of sorted handlers from the original handlers.
         """
-        SortKey = self._SortKey
+        sort_key_type = self._SortKey
         systems = self._systems
         # Uses dict to remove duplicates while preserving some order
-        return sorted(dict.fromkeys(handlers), key=lambda h: SortKey(h, systems))
+        return sorted(dict.fromkeys(handlers), key=lambda h: sort_key_type(h, systems))
 
     def _get_handlers(self, event: _T, /) -> list[_EventHandler[_T]]:
         event_type = type(event)

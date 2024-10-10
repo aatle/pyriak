@@ -65,7 +65,7 @@ class EventKeyFunctions:
 
     __slots__ = ("_data",)
 
-    def __init__(self, dict: Mapping[type, KeyFunction[Any]] | None = None):
+    def __init__(self, dict: Mapping[type, KeyFunction[Any]] | None = None):  # noqa: A002
         self._data: WeakKeyDictionary[type, KeyFunction[Any]]
         self._data = WeakKeyDictionary()
         if dict is not None:

@@ -44,8 +44,14 @@ select = [
   "F",
   "W",
   "I",
+  "N",
   "B",
+  "A",
+  "Q",
+  "UP",
   "C4",
+  "PL",
+  "RUF",
   "ARG",
   "SIM",
   "PIE",
@@ -53,13 +59,16 @@ select = [
   "FBT",
   "ISC",
   "RSE",
+  "FLY",
   "RET",
+  "T20",
+  "ICN",
+  "TCH",
   "SLOT",
   "PERF",
-  "RUF",
   # "FURB",
 ]
-ignore = ["SIM105", "PERF203", "ISC001"]
+ignore = ["SIM105", "PERF203", "ISC001", "PLC0414"]
 
 [tool.ruff.lint.isort]
 lines-after-imports = 2

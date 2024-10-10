@@ -405,8 +405,8 @@ class EntityManager:
         type_cache = self._type_cache
         return QueryResult(
             {
-                id: self_entities[id]
-                for id in merge(
+                entity_id: self_entities[entity_id]
+                for entity_id in merge(
                     *[
                         type_cache[typ]  # noqa: SIM401
                         if typ in type_cache
