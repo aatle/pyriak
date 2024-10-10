@@ -31,14 +31,14 @@ most of the things necessary to use this package.
 """
 
 __all__ = [
-  'bind',
-  'Space',
-  'Entity',
-  'EntityId',
-  'System',
-  'EventQueue',
-  'key_functions',
-  'set_key',
+    "bind",
+    "Space",
+    "Entity",
+    "EntityId",
+    "System",
+    "EventQueue",
+    "key_functions",
+    "set_key",
 ]
 
 from collections.abc import Hashable as _Hashable, MutableSequence as _MutableSequence
@@ -57,7 +57,7 @@ dead_weakref: _weakref[_Any] = _weakref(set())
 
 
 class _Sentinel(_Enum):
-  SENTINEL = 1
+    SENTINEL = 1
 
 
 _SENTINEL: _Sentinel = _Sentinel.SENTINEL

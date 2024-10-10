@@ -25,15 +25,15 @@ The operator module has useful functions for
 creating key functions, e.g. attrgetter.
 """
 
-__all__ = ['key_functions', 'set_key', 'KeyFunction']
+__all__ = ["key_functions", "set_key", "KeyFunction"]
 
 from collections.abc import Callable, Hashable, Iterator, Mapping
 from typing import Any, TypeAlias, TypeVar, overload
 from weakref import WeakKeyDictionary
 
 
-_T = TypeVar('_T')
-_D = TypeVar('_D')
+_T = TypeVar("_T")
+_D = TypeVar("_D")
 
 del TypeVar
 
@@ -48,117 +48,119 @@ All keys must be hashable.
 
 
 class EventKeyFunctions:
-  """A dictionary of event types to key functions.
+    """A dictionary of event types to key functions.
 
-  Once a key function is set for an event type, it cannot be
-  deleted or replaced.
-  Currently, there is only one key function mapping per process,
-  accessible as pyriak.key_functions.
+    Once a key function is set for an event type, it cannot be
+    deleted or replaced.
+    Currently, there is only one key function mapping per process,
+    accessible as pyriak.key_functions.
 
-  Internally, EventKeyFunctions is implemented using a WeakKeyDictionary,
-  meaning that event types are not kept alive just because they
-  have a key function. Since type objects usually don't get deleted,
-  this feature may rarely be used.
-  Note: In CPython, type objects have reference cycles, so only the garbage
-  collector can delete them, not reference counting.
-  """
-
-  __slots__ = ('_data',)
-
-  def __init__(self, dict: Mapping[type, KeyFunction[Any]] | None = None):
-    self._data: WeakKeyDictionary[type, KeyFunction[Any]]
-    self._data = WeakKeyDictionary()
-    if dict is not None:
-      self.update(dict)
-
-  def __getitem__(self, event_type: type[_T]) -> KeyFunction[_T]:
-    return self._data[event_type]
-
-  def __setitem__(self, event_type: type[_T], key: KeyFunction[_T]):
-    """Set a key function for an event type.
-
-    Raises:
-      ValueError: If the given event type already has a key function set.
+    Internally, EventKeyFunctions is implemented using a WeakKeyDictionary,
+    meaning that event types are not kept alive just because they
+    have a key function. Since type objects usually don't get deleted,
+    this feature may rarely be used.
+    Note: In CPython, type objects have reference cycles, so only the garbage
+    collector can delete them, not reference counting.
     """
-    data = self._data
-    if event_type in data:
-      raise ValueError(f'cannot reassign key function for event type {event_type!r}')
-    data[event_type] = key
 
-  @overload
-  def get(self, event_type: type[_T]) -> KeyFunction[_T] | None: ...
-  @overload
-  def get(self, event_type: type[_T], default: _D) -> KeyFunction[_T] | _D: ...
-  def get(self, event_type, default=None):
-    return self._data.get(event_type, default)
+    __slots__ = ("_data",)
 
-  def setdefault(
-    self, event_type: type[_T], default: KeyFunction[_T]
-  ) -> KeyFunction[_T]:
-    data = self._data
-    if event_type in data:
-      return data[event_type]
-    data[event_type] = default
-    return default
+    def __init__(self, dict: Mapping[type, KeyFunction[Any]] | None = None):
+        self._data: WeakKeyDictionary[type, KeyFunction[Any]]
+        self._data = WeakKeyDictionary()
+        if dict is not None:
+            self.update(dict)
 
-  def update(self, other: Mapping[type, KeyFunction[Any]]) -> None:
-    for event_type, key in dict(other).items():
-      self[event_type] = key
+    def __getitem__(self, event_type: type[_T]) -> KeyFunction[_T]:
+        return self._data[event_type]
 
-  def keys(self):
-    return self._data.keys()
+    def __setitem__(self, event_type: type[_T], key: KeyFunction[_T]):
+        """Set a key function for an event type.
 
-  def values(self):
-    return self._data.values()
+        Raises:
+            ValueError: If the given event type already has a key function set.
+        """
+        data = self._data
+        if event_type in data:
+            raise ValueError(
+                f"cannot reassign key function for event type {event_type!r}"
+            )
+        data[event_type] = key
 
-  def items(self):
-    return self._data.items()
+    @overload
+    def get(self, event_type: type[_T]) -> KeyFunction[_T] | None: ...
+    @overload
+    def get(self, event_type: type[_T], default: _D) -> KeyFunction[_T] | _D: ...
+    def get(self, event_type, default=None):
+        return self._data.get(event_type, default)
 
-  def __len__(self):
-    return len(self._data)
+    def setdefault(
+        self, event_type: type[_T], default: KeyFunction[_T]
+    ) -> KeyFunction[_T]:
+        data = self._data
+        if event_type in data:
+            return data[event_type]
+        data[event_type] = default
+        return default
 
-  def __contains__(self, event_type: type):
-    return event_type in self._data
+    def update(self, other: Mapping[type, KeyFunction[Any]]) -> None:
+        for event_type, key in dict(other).items():
+            self[event_type] = key
 
-  def __iter__(self):
-    return iter(self._data)
+    def keys(self):
+        return self._data.keys()
 
-  def __or__(self, other: Mapping[type, KeyFunction[Any]]):
-    return self._data | other
+    def values(self):
+        return self._data.values()
 
-  def __ror__(self, other: Mapping[type, KeyFunction[Any]]):
-    return other | self._data
+    def items(self):
+        return self._data.items()
 
-  def __ior__(self, other: Mapping[type, KeyFunction[Any]]):
-    self.update(other)
-    return self
+    def __len__(self):
+        return len(self._data)
 
-  def copy(self):
-    return self._data.copy()
+    def __contains__(self, event_type: type):
+        return event_type in self._data
 
-  def keyrefs(self):
-    return self._data.keyrefs()
+    def __iter__(self):
+        return iter(self._data)
+
+    def __or__(self, other: Mapping[type, KeyFunction[Any]]):
+        return self._data | other
+
+    def __ror__(self, other: Mapping[type, KeyFunction[Any]]):
+        return other | self._data
+
+    def __ior__(self, other: Mapping[type, KeyFunction[Any]]):
+        self.update(other)
+        return self
+
+    def copy(self):
+        return self._data.copy()
+
+    def keyrefs(self):
+        return self._data.keyrefs()
 
 
 key_functions = EventKeyFunctions()
 
 
 def set_key(key: KeyFunction[_T], /) -> Callable[[type[_T]], type[_T]]:
-  """Assign a key function to an event type.
+    """Assign a key function to an event type.
 
-  Use as a decorator to assign a key function to an event class definition.
+    Use as a decorator to assign a key function to an event class definition.
 
-  Args:
-    key: The key function to be assigned.
+    Args:
+        key: The key function to be assigned.
 
-  Returns:
-    A decorator that sets the key function on its argument
-    and then returns the argument.
-    This decorator raises ValueError if the type already has a key function.
-  """
+    Returns:
+        A decorator that sets the key function on its argument
+        and then returns the argument.
+        This decorator raises ValueError if the type already has a key function.
+    """
 
-  def decorator(cls: type[_T]) -> type[_T]:
-    key_functions[cls] = key
-    return cls
+    def decorator(cls: type[_T]) -> type[_T]:
+        key_functions[cls] = key
+        return cls
 
-  return decorator
+    return decorator
