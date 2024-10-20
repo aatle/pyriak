@@ -504,16 +504,24 @@ class SystemManager:
         all_handlers = self._handlers
         all_key_handlers = self._key_handlers
         events: list[EventHandlerRemoved] = []
+        seen: dict[type, frozenset[Hashable]] = {}
         for binding, handler in self._get_bindings(system):
             event_type = binding._event_type_
-            handlers = all_handlers[event_type]
-            handlers[:] = [handler for handler in handlers if handler.system != system]
-            if not handlers:
-                del all_handlers[event_type]
             keys = binding._keys_
-            if keys:
+            if event_type not in seen:
+                handlers = all_handlers[event_type]
+                handlers[:] = [
+                    handler for handler in handlers if handler.system != system
+                ]
+                if not handlers:
+                    del all_handlers[event_type]
+                seen[event_type] = unseen_keys = keys
+            else:
+                unseen_keys = keys - seen[event_type]
+                seen[event_type] |= unseen_keys
+            if unseen_keys:
                 key_handlers = all_key_handlers[event_type]
-                for key in keys:
+                for key in unseen_keys:
                     handlers = key_handlers[key]
                     handlers[:] = [
                         handler for handler in handlers if handler.system != system
