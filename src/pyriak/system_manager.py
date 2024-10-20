@@ -510,9 +510,11 @@ class SystemManager:
             handlers[:] = [handler for handler in handlers if handler.system != system]
             if not handlers:
                 del all_handlers[event_type]
-            if event_type in all_key_handlers:
+            keys = binding._keys_
+            if keys:
                 key_handlers = all_key_handlers[event_type]
-                for key, handlers in key_handlers.items():
+                for key in keys:
+                    handlers = key_handlers[key]
                     handlers[:] = [
                         handler for handler in handlers if handler.system != system
                     ]
