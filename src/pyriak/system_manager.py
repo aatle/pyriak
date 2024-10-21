@@ -460,32 +460,26 @@ class SystemManager:
         for binding, handler in self._get_bindings(system):
             event_type = binding._event_type_
             keys = binding._keys_
-            if not keys:
-                try:
-                    insert_handler(all_handlers[event_type], handler)
-                except KeyError:
+            if event_type not in all_handlers:
+                if not keys:
                     all_handlers[event_type] = [handler]
-                if event_type in key_functions:
-                    try:
-                        for handlers in all_key_handlers[event_type].values():
-                            insert_handler(handlers, handler)
-                    except KeyError:
+                    if event_type in key_functions:
                         all_key_handlers[event_type] = {}
-            else:
-                try:
-                    handlers = all_handlers[event_type]
-                except KeyError:
-                    handlers = all_handlers[event_type] = []
-                if event_type not in all_key_handlers:
-                    handlers = handlers[:]
-                    insert_handler(handlers, handler)
-                    all_key_handlers[event_type] = {key: handlers[:] for key in keys}
                 else:
-                    key_handlers = all_key_handlers[event_type]
-                    for key in keys:
-                        if key not in key_handlers:
-                            key_handlers[key] = handlers[:]
-                        insert_handler(key_handlers[key], handler)
+                    all_handlers[event_type] = []
+                    all_key_handlers[event_type] = {key: [handler] for key in keys}
+            elif not keys:
+                insert_handler(all_handlers[event_type], handler)
+                if event_type in all_key_handlers:
+                    for handlers in all_key_handlers[event_type].values():
+                        insert_handler(handlers, handler)
+            else:
+                handlers = all_handlers[event_type]
+                key_handlers = all_key_handlers[event_type]
+                for key in keys:
+                    if key not in key_handlers:
+                        key_handlers[key] = handlers[:]
+                    insert_handler(key_handlers[key], handler)
             events.append(EventHandlerAdded(binding, handler))
         return events
 
