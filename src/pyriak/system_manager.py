@@ -514,7 +514,10 @@ class SystemManager:
                     handler for handler in handlers if handler.system != system
                 ]
                 if not handlers:
-                    del all_handlers[event_type]
+                    if event_type not in all_key_handlers:
+                        del all_handlers[event_type]
+                    elif not all_key_handlers[event_type]:
+                        del all_handlers[event_type], all_key_handlers[event_type]
                 seen[event_type] = unseen_keys = keys
             else:
                 unseen_keys = keys - seen[event_type]
@@ -530,5 +533,7 @@ class SystemManager:
                         del key_handlers[key]
                 if not key_handlers:
                     del all_key_handlers[event_type]
+                    if not all_handlers[event_type]:
+                        del all_handlers[event_type]
             events.append(EventHandlerRemoved(binding, handler))
         return events
