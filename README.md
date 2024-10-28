@@ -80,7 +80,7 @@ The callback takes arguments `space` and `event`. (The name of the function is n
 ```python
 # game_loop.py
 @bind(InitializeGame, 100)
-def run(space: Space, event: InitializeGame):
+def run(space: Space, event: InitializeGame) -> None:
     pass
 ```
 Most event handlers should not return anything (return None).\
@@ -94,7 +94,7 @@ Which method to use depends on if behavior needs to execute immediately (synchro
 ```python
 # game_loop.py
 @bind(InitializeGame, 100)
-def run(space: Space, event: InitializeGame):
+def run(space: Space, event: InitializeGame) -> None:
     while not space.states[GameLoop].stop_game:
         space.post(UpdateGame(dt))
         space.pump()
@@ -116,7 +116,7 @@ Systems may optionally define callbacks `_added_()` and `_removed_()` that are i
 The return value is ignored.
 ```python
 # game_loop.py
-def _added_(space: Space):
+def _added_(space: Space) -> None:
     space.states.add(states.GameLoop(FPS))
 ```
 
@@ -124,12 +124,12 @@ In ECS, systems need to access components in bulk. This can be done with the `sp
 The return value is an object with methods to access the data, such as `.zip()`.
 ```python
 @bind(events.UpdateGame, 500)
-def update_physics(space: Space, event: events.UpdateGame)
+def update_physics(space: Space, event: events.UpdateGame) -> None:
     for position, velocity, acceleration in space.query(
       components.Position, components.Velocity, components.Acceleration
     ).zip():
-        velocity += acceleration
-        position += velocity
+        velocity += acceleration * event.dt
+        position += velocity * event.dt
 ```
 
 Those are all of the basic features needed to write a program with pyriak.
