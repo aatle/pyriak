@@ -123,7 +123,7 @@ def _added_(space: Space):
 In ECS, systems need to access components in bulk. This can be done with the `space.query()` method, which takes any number of component types as arguments.
 The return value is an object with methods to access the data, such as `.zip()`.
 ```python
-@bind(events.UpdateGame)
+@bind(events.UpdateGame, 500)
 def update_physics(space: Space, event: events.UpdateGame)
     for position, velocity, acceleration in space.query(
       components.Position, components.Velocity, components.Acceleration
