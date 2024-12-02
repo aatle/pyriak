@@ -59,7 +59,7 @@ class Binding(Generic[_T, _R_co]):
         event_type: type[_T],
         priority: Any,
         keys: frozenset[Hashable],
-    ):
+    ) -> None:
         update_wrapper(self, callback)
         self._event_type_ = event_type
         self._priority_ = priority
@@ -72,10 +72,14 @@ class Binding(Generic[_T, _R_co]):
     def __call__(self, space: "Space", event: _T, /) -> _R_co:
         return self._callback_(space, event)
 
-    def __get__(self, obj, objtype=None):
+    def __get__(
+        self, obj: object | None, objtype: type | None = None
+    ) -> _Callback[_T, _R_co]:
         callback = self._callback_
         try:
-            descr_get = type(callback).__get__  # type: ignore[attr-defined]
+            descr_get: Callable[
+                [_Callback[_T, _R_co], object | None, type | None], _Callback[_T, _R_co]
+            ] = type(callback).__get__  # type: ignore[attr-defined]
         except AttributeError:
             return callback
         return descr_get(callback, obj, objtype)
@@ -162,7 +166,7 @@ def bind(event_type, priority, /, *, key=_SENTINEL, keys=_SENTINEL):
             f"bind(): keys were provided but no key function exists for {event_type!r}"
         )
 
-    def decorator(callback, /):
+    def decorator(callback: _Callback[_T, _R_co], /) -> Binding[_T, _R_co]:
         if isinstance(callback, Binding):
             raise TypeError("cannot bind same object multiple times")
         return Binding(callback, event_type, priority, keys)

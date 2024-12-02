@@ -61,14 +61,14 @@ class _EventHandler(NamedTuple, Generic[_T]):
     def __call__(self, space: "Space", event: _T, /) -> Any:
         return self.callback(space, event)
 
-    def __eq__(self, other: object):
+    def __eq__(self, other: object) -> bool:
         if self is other:
             return True
         if isinstance(other, _EventHandler):
             return self.name == other.name and self.system == other.system
         return NotImplemented
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.name, self.system))
 
 
@@ -108,7 +108,7 @@ class SystemManager:
         /,
         space: "Space | None" = None,
         event_queue: EventQueue | None = None,
-    ):
+    ) -> None:
         """Initialize the SystemManager with systems, space, and event queue.
 
         By default, the SystemManager is initialized with no systems, event queue
@@ -269,16 +269,16 @@ class SystemManager:
             if system in self_systems:
                 self.remove(system)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[System]:
         return iter(self._systems)
 
-    def __reversed__(self):
+    def __reversed__(self) -> Iterator[System]:
         return reversed(self._systems)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._systems)
 
-    def __contains__(self, obj: object, /):
+    def __contains__(self, obj: object, /) -> bool:
         return obj in self._systems
 
     def clear(self) -> None:
@@ -305,7 +305,7 @@ class SystemManager:
         return self._space()
 
     @space.setter
-    def space(self, value: "Space | None"):
+    def space(self, value: "Space | None") -> None:
         self._space = dead_weakref if value is None else weakref(value)
 
     @staticmethod
@@ -334,7 +334,9 @@ class SystemManager:
     class _SortKey:
         __slots__ = "handler", "systems"
 
-        def __init__(self, handler: _EventHandler[Any], systems: Iterable[System], /):
+        def __init__(
+            self, handler: _EventHandler[Any], systems: Iterable[System], /
+        ) -> None:
             self.handler = handler
             self.systems = systems
 

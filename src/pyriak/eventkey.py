@@ -29,7 +29,7 @@ __all__ = ["key_functions", "set_key", "KeyFunction"]
 
 from collections.abc import Callable, Hashable, Iterator, Mapping
 from typing import Any, TypeAlias, TypeVar, overload
-from weakref import WeakKeyDictionary
+from weakref import WeakKeyDictionary, ref as weakref
 
 
 _T = TypeVar("_T")
@@ -65,8 +65,12 @@ class EventKeyFunctions:
 
     __slots__ = ("_data",)
 
-    def __init__(self, dict: Mapping[type, KeyFunction[Any]] | None = None):  # noqa: A002
-        self._data: WeakKeyDictionary[type, KeyFunction[Any]]
+    _data: WeakKeyDictionary[type, KeyFunction[Any]]
+
+    def __init__(
+        self,
+        dict: Mapping[type, KeyFunction[Any]] | None = None,  # noqa: A002
+    ) -> None:
         self._data = WeakKeyDictionary()
         if dict is not None:
             self.update(dict)
@@ -74,7 +78,7 @@ class EventKeyFunctions:
     def __getitem__(self, event_type: type[_T]) -> KeyFunction[_T]:
         return self._data[event_type]
 
-    def __setitem__(self, event_type: type[_T], key: KeyFunction[_T]):
+    def __setitem__(self, event_type: type[_T], key: KeyFunction[_T]) -> None:
         """Set a key function for an event type.
 
         Raises:
@@ -107,38 +111,42 @@ class EventKeyFunctions:
         for event_type, key in dict(other).items():
             self[event_type] = key
 
-    def keys(self):
+    def keys(self) -> Iterator[type]:
         return self._data.keys()
 
-    def values(self):
+    def values(self) -> Iterator[KeyFunction[Any]]:
         return self._data.values()
 
-    def items(self):
+    def items(self) -> Iterator[tuple[type, KeyFunction[Any]]]:
         return self._data.items()
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._data)
 
-    def __contains__(self, event_type: type):
-        return event_type in self._data
+    def __contains__(self, obj: object, /) -> bool:
+        return obj in self._data
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[type]:
         return iter(self._data)
 
-    def __or__(self, other: Mapping[type, KeyFunction[Any]]):
+    def __or__(
+        self, other: Mapping[type, KeyFunction[Any]]
+    ) -> WeakKeyDictionary[type, KeyFunction[Any]]:
         return self._data | other
 
-    def __ror__(self, other: Mapping[type, KeyFunction[Any]]):
+    def __ror__(
+        self, other: Mapping[type, KeyFunction[Any]]
+    ) -> WeakKeyDictionary[type, KeyFunction[Any]]:
         return other | self._data
 
-    def __ior__(self, other: Mapping[type, KeyFunction[Any]]):
+    def __ior__(self, other: Mapping[type, KeyFunction[Any]]) -> "EventKeyFunctions":
         self.update(other)
         return self
 
-    def copy(self):
+    def copy(self) -> WeakKeyDictionary[type, KeyFunction[Any]]:
         return self._data.copy()
 
-    def keyrefs(self):
+    def keyrefs(self) -> list[weakref[type]]:
         return self._data.keyrefs()
 
 
@@ -159,7 +167,7 @@ def set_key(key: KeyFunction[_T], /) -> Callable[[type[_T]], type[_T]]:
         This decorator raises ValueError if the type already has a key function.
     """
 
-    def decorator(cls: type[_T]) -> type[_T]:
+    def decorator(cls: type[_T], /) -> type[_T]:
         key_functions[cls] = key
         return cls
 

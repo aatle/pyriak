@@ -42,7 +42,7 @@ class Space:
         systems: SystemManager | None = None,
         entities: EntityManager | None = None,
         states: StateManager | None = None,
-    ):
+    ) -> None:
         """Initialize the Space with the managers and event queue.
 
         By default (or when None is given as the argument), instantiates

@@ -35,7 +35,7 @@ class QueryResult:
         _types: tuple[type, ...],
         _merge: Callable[..., set],
         /,
-    ):
+    ) -> None:
         self._entities = _entities
         self._types = _types
         self._merge = _merge
@@ -161,7 +161,7 @@ class _Components:
 
     _manager: Callable[[], "EntityManager"]
 
-    def __init__(self, manager: "EntityManager", /):
+    def __init__(self, manager: "EntityManager", /) -> None:
         self._manager = weakref(manager)  # type: ignore[assignment]
 
     def __call__(self, component_type: type[_T], /) -> Iterator[_T]:
@@ -202,10 +202,10 @@ class _Components:
         for entity in reversed(self._manager()):
             yield from reversed(entity)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return sum([len(entity) for entity in self._manager()])
 
-    def __contains__(self, obj: object, /):
+    def __contains__(self, obj: object, /) -> bool:
         return obj in self._manager()._type_cache
 
 
@@ -235,7 +235,7 @@ class EntityManager:
 
     def __init__(
         self, entities: Iterable[Entity] = (), /, event_queue: EventQueue | None = None
-    ):
+    ) -> None:
         """Initialize the EntityManager with the given entities and event queue.
 
         By default, the EntityManager is initialized with no entities and
@@ -464,7 +464,7 @@ class EntityManager:
     def __getitem__(self, entity_id: EntityId, /) -> Entity:
         return self._entities[entity_id]
 
-    def __delitem__(self, entity_id: EntityId, /):
+    def __delitem__(self, entity_id: EntityId, /) -> None:
         self.remove(self._entities[entity_id])
 
     @overload
@@ -508,16 +508,16 @@ class EntityManager:
             return self._entities.keys()
         return set(self._type_cache.get(component_type, ()))
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Entity]:
         return iter(self._entities.values())
 
-    def __reversed__(self):
+    def __reversed__(self) -> Iterator[Entity]:
         return reversed(self._entities.values())
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._entities)
 
-    def __contains__(self, obj: object, /):
+    def __contains__(self, obj: object, /) -> bool:
         if isinstance(obj, Entity):
             return obj.id in self._entities
         return obj in self._entities

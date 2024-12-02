@@ -44,7 +44,7 @@ class EntityAdded:
         entity: The entity added to the manager.
     """
 
-    def __init__(self, entity: "Entity"):
+    def __init__(self, entity: "Entity") -> None:
         self.entity = entity
 
 
@@ -55,7 +55,7 @@ class EntityRemoved:
         entity: The entity removed from the manager.
     """
 
-    def __init__(self, entity: "Entity"):
+    def __init__(self, entity: "Entity") -> None:
         self.entity = entity
 
 
@@ -77,7 +77,7 @@ class ComponentAdded(Generic[_T]):
         component: The component added.
     """
 
-    def __init__(self, entity: "Entity", component: _T):
+    def __init__(self, entity: "Entity", component: _T) -> None:
         self.entity = entity
         self.component = component
 
@@ -97,7 +97,7 @@ class ComponentRemoved(Generic[_T]):
         component: The component removed.
     """
 
-    def __init__(self, entity: "Entity", component: _T):
+    def __init__(self, entity: "Entity", component: _T) -> None:
         self.entity = entity
         self.component = component
 
@@ -116,7 +116,7 @@ class SystemAdded:
         system: The system added to the manager.
     """
 
-    def __init__(self, system: "System"):
+    def __init__(self, system: "System") -> None:
         self.system = system
 
 
@@ -130,7 +130,7 @@ class SystemRemoved:
         system: The system removed from the manager.
     """
 
-    def __init__(self, system: "System"):
+    def __init__(self, system: "System") -> None:
         self.system = system
 
 
@@ -148,7 +148,7 @@ class StateAdded(Generic[_T]):
         state: The state added to the manager.
     """
 
-    def __init__(self, state: _T):
+    def __init__(self, state: _T) -> None:
         self.state = state
 
 
@@ -162,7 +162,7 @@ class StateRemoved(Generic[_T]):
         state: The state removed from the manager.
     """
 
-    def __init__(self, state: _T):
+    def __init__(self, state: _T) -> None:
         self.state = state
 
 
@@ -171,7 +171,9 @@ def _handler_key(event: "EventHandlerAdded | EventHandlerRemoved") -> type:
 
 
 class _EventHandlerEvent(Generic[_T]):
-    def __init__(self, _binding: "Binding[_T, Any]", _handler: "_EventHandler[_T]"):
+    def __init__(
+        self, _binding: "Binding[_T, Any]", _handler: "_EventHandler[_T]"
+    ) -> None:
         self._binding = _binding
         self._handler = _handler
 

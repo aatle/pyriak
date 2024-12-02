@@ -2,7 +2,7 @@
 
 __all__ = ["StateManager"]
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator, KeysView
 from typing import TypeVar, overload
 
 from pyriak import _SENTINEL, EventQueue
@@ -42,7 +42,7 @@ class StateManager:
 
     def __init__(
         self, states: Iterable[object] = (), /, event_queue: EventQueue | None = None
-    ):
+    ) -> None:
         """Initialize the StateManager with the given states and event queue.
 
         By default, the StateManager is initialized with no states and
@@ -173,12 +173,12 @@ class StateManager:
     def __getitem__(self, state_type: type[_T], /) -> _T:
         return self._states[state_type]  # type: ignore[return-value]
 
-    def __setitem__(self, state_type: type[_T], state: _T):
+    def __setitem__(self, state_type: type[_T], state: _T) -> None:
         if type(state) is not state_type:
             raise TypeError(state)
         self.update(state)
 
-    def __delitem__(self, state_type: type, /):
+    def __delitem__(self, state_type: type, /) -> None:
         self.remove(self[state_type])
 
     @overload
@@ -202,19 +202,19 @@ class StateManager:
         self.remove(state)
         return state
 
-    def types(self):
+    def types(self) -> KeysView[type]:
         return self._states.keys()
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[object]:
         return iter(self._states.values())
 
-    def __reversed__(self):
+    def __reversed__(self) -> Iterator[object]:
         return reversed(self._states.values())
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._states)
 
-    def __contains__(self, obj: object, /):
+    def __contains__(self, obj: object, /) -> bool:
         return obj in self._states
 
     def clear(self) -> None:

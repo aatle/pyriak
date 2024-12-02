@@ -2,7 +2,7 @@
 
 __all__ = ["Entity", "EntityId"]
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator, KeysView
 from typing import TYPE_CHECKING, NewType, TypeVar, overload
 from uuid import uuid4
 
@@ -50,7 +50,7 @@ class Entity:
 
     __slots__ = "id", "_components", "_manager"
 
-    def __init__(self, components: Iterable[object] = (), /):
+    def __init__(self, components: Iterable[object] = (), /) -> None:
         """Initialize the entity with the given components.
 
         The entity also gets a unique EntityId.
@@ -187,12 +187,12 @@ class Entity:
     def __getitem__(self, component_type: type[_T], /) -> _T:
         return self._components[component_type]  # type: ignore[return-value]
 
-    def __setitem__(self, component_type: type[_T], component: _T):
+    def __setitem__(self, component_type: type[_T], component: _T) -> None:
         if type(component) is not component_type:
             raise TypeError(component)
         self.update(component)
 
-    def __delitem__(self, component_type: type, /):
+    def __delitem__(self, component_type: type, /) -> None:
         self.remove(self[component_type])
 
     @overload
@@ -216,29 +216,29 @@ class Entity:
         self.remove(component)
         return component
 
-    def types(self):
+    def types(self) -> KeysView[type]:
         return self._components.keys()
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[object]:
         return iter(self._components.values())
 
-    def __reversed__(self):
+    def __reversed__(self) -> Iterator[object]:
         return reversed(self._components.values())
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._components)
 
-    def __contains__(self, obj: object, /):
+    def __contains__(self, obj: object, /) -> bool:
         return obj in self._components
 
-    def __eq__(self, other: object, /):
+    def __eq__(self, other: object, /) -> bool:
         if self is other:
             return True
         if isinstance(other, Entity):
             return self._components == other._components
         return NotImplemented
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{type(self).__name__}({list(self)})"
 
     def clear(self) -> None:
