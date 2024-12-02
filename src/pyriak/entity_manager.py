@@ -369,6 +369,23 @@ class EntityManager:
                     ]
                 )
 
+    def discard(self, *entities: Entity) -> None:
+        """Remove entities, skipping any not in self.
+
+        This method is the same as remove(), with one difference:
+        it does not raise an exception when an entity is missing from self.
+        Instead, the entity is skipped.
+
+        See documentation of remove() for more info.
+
+        Args:
+            *entities: The entities to be removed if in self.
+        """
+        self_entities = self._entities
+        for entity in entities:
+            if entity.id in self_entities:
+                self.remove(entity)
+
     def query(
         self, /, *component_types: type, merge: Callable[..., set] = set.intersection
     ) -> QueryResult:
