@@ -7,17 +7,17 @@ license = "MIT"
 readme = "README.md"
 keywords = ["ecs", "framework", "architecture"]
 classifiers = [
-  "Development Status :: 4 - Beta",
-  "License :: OSI Approved :: MIT License",
-  "Topic :: Software Development :: Libraries :: Python Modules",
-  "Intended Audience :: Developers",
-  "Typing :: Typed",
-  "Operating System :: OS Independent",
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Intended Audience :: Developers",
+    "Typing :: Typed",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 
 [tool.poetry.dependencies]
@@ -41,33 +41,33 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.ruff.lint]
 select = [
-  "E",
-  "F",
-  "W",
-  "I",
-  "N",
-  "B",
-  "A",
-  "Q",
-  "UP",
-  "C4",
-  "PL",
-  "RUF",
-  "ARG",
-  "SIM",
-  "PIE",
-  "BLE",
-  "FBT",
-  "ISC",
-  "RSE",
-  "FLY",
-  "RET",
-  "T20",
-  "ICN",
-  "TC",
-  "SLOT",
-  "PERF",
-  # "FURB",
+    "E",
+    "F",
+    "W",
+    "I",
+    "N",
+    "B",
+    "A",
+    "Q",
+    "UP",
+    "C4",
+    "PL",
+    "RUF",
+    "ARG",
+    "SIM",
+    "PIE",
+    "BLE",
+    "FBT",
+    "ISC",
+    "RSE",
+    "FLY",
+    "RET",
+    "T20",
+    "ICN",
+    "TC",
+    "SLOT",
+    "PERF",
+    # "FURB",
 ]
 ignore = ["SIM105", "PERF203", "ISC001", "PLC0414", "RUF022", "RUF023"]
 
@@ -78,12 +78,12 @@ combine-as-imports = true
 
 [tool.mypy]
 enable_error_code = [
-  "ignore-without-code",
-  "redundant-expr",
-  "possibly-undefined",
-  "truthy-bool",
-  "truthy-iterable",
-  "mutable-override",
+    "ignore-without-code",
+    "redundant-expr",
+    "possibly-undefined",
+    "truthy-bool",
+    "truthy-iterable",
+    "mutable-override",
 ]
 disallow_subclassing_any = true
 check_untyped_defs = true
