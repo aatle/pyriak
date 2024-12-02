@@ -143,9 +143,6 @@ class EventKeyFunctions:
         self.update(other)
         return self
 
-    def copy(self) -> WeakKeyDictionary[type, KeyFunction[Any]]:
-        return self._data.copy()
-
     def keyrefs(self) -> list[weakref[type]]:
         return self._data.keyrefs()
 
