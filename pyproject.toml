@@ -24,7 +24,7 @@ classifiers = [
 python = ">=3.10"
 
 [tool.poetry.group.dev.dependencies]
-ruff = "^0.4.4"
+ruff = ">=0.8.0"
 mypy = "^1.10.0"
 
 [tool.poetry.urls]
@@ -69,7 +69,7 @@ select = [
   "PERF",
   # "FURB",
 ]
-ignore = ["SIM105", "PERF203", "ISC001", "PLC0414"]
+ignore = ["SIM105", "PERF203", "ISC001", "PLC0414", "RUF022", "RUF023"]
 
 [tool.ruff.lint.isort]
 lines-after-imports = 2
