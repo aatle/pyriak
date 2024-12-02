@@ -166,6 +166,24 @@ class Entity:
                     continue
             raise ValueError(component)
 
+    def discard(self, *components: object) -> None:
+        """Remove components, skipping any not in self.
+
+        This method is the same as remove(), with one difference:
+        it does not raise an exception when a component is missing from self.
+        Instead, the component is skipped.
+
+        See documentation of remove() for more info.
+
+        Args:
+            *components: The components to be removed if in self.
+        """
+        for component in components:
+            try:
+                self.remove(component)
+            except ValueError:
+                pass
+
     def __getitem__(self, component_type: type[_T], /) -> _T:
         return self._components[component_type]  # type: ignore[return-value]
 

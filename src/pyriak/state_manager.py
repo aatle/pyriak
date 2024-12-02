@@ -152,6 +152,24 @@ class StateManager:
                     continue
             raise ValueError(state)
 
+    def discard(self, *states: object) -> None:
+        """Remove states, skipping any not in self.
+
+        This method is the same as remove(), with one difference:
+        it does not raise an exception when a state is missing from self.
+        Instead, the state is skipped.
+
+        See documentation of remove() for more info.
+
+        Args:
+            *states: The states to be removed if in self.
+        """
+        for state in states:
+            try:
+                self.remove(state)
+            except ValueError:
+                pass
+
     def __getitem__(self, state_type: type[_T], /) -> _T:
         return self._states[state_type]  # type: ignore[return-value]
 
