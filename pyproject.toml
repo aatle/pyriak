@@ -64,7 +64,7 @@ select = [
   "RET",
   "T20",
   "ICN",
-  "TCH",
+  "TC",
   "SLOT",
   "PERF",
   # "FURB",
