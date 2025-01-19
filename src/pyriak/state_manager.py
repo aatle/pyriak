@@ -217,5 +217,15 @@ class StateManager:
     def __contains__(self, obj: object, /) -> bool:
         return obj in self._states
 
+    def __eq__(self, other: object, /) -> bool:
+        if self is other:
+            return True
+        if isinstance(other, StateManager):
+            return self._states == other._states
+        return NotImplemented
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}([{', '.join([repr(obj) for obj in self])}])"
+
     def clear(self) -> None:
         self.remove(*self)
