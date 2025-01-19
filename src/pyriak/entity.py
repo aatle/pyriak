@@ -239,7 +239,7 @@ class Entity:
         return NotImplemented
 
     def __repr__(self) -> str:
-        return f"{type(self).__name__}({list(self)})"
+        return f"{type(self).__name__}([{', '.join([repr(obj) for obj in self])}])"
 
     def clear(self) -> None:
         self.remove(*self)
