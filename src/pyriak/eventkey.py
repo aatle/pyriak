@@ -143,6 +143,21 @@ class EventKeyFunctions:
         self.update(other)
         return self
 
+    def __eq__(self, other: object) -> bool:
+        if self is other:
+            return True
+        if isinstance(other, EventKeyFunctions):
+            return self._data == other._data
+        return self._data.__eq__(other)
+
+    def copy(self) -> "EventKeyFunctions":  # TODO: use typing.Self in 3.11+
+        cls = type(self)
+        obj = cls.__new__(cls)
+        obj._data = self._data.copy()
+        return obj
+
+    __copy__ = copy
+
     def keyrefs(self) -> list[weakref[type]]:
         return self._data.keyrefs()
 
