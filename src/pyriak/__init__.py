@@ -43,7 +43,7 @@ __all__ = [
 
 from collections.abc import Hashable as _Hashable, MutableSequence as _MutableSequence
 from enum import Enum as _Enum
-from typing import Any as _Any, TypeAlias as _TypeAlias
+from typing import Any as _Any, Final as _Final, TypeAlias as _TypeAlias
 from weakref import ref as _weakref
 
 
@@ -69,6 +69,9 @@ from pyriak.entity import Entity, EntityId  # noqa: E402
 from pyriak.entity_manager import QueryResult as QueryResult  # noqa: E402
 from pyriak.eventkey import key_functions, set_key  # noqa: E402
 from pyriak.space import Space  # noqa: E402
+
+
+NULL_ID: _Final[EntityId] = EntityId(0)
 
 
 # cleanup namespace
