@@ -3,6 +3,7 @@
 __all__ = ["EntityManager", "QueryResult"]
 
 from collections.abc import Collection, Iterable, Iterator, KeysView, Set as AbstractSet
+from reprlib import recursive_repr
 from typing import Any, Callable, TypeVar, overload
 from weakref import ref as weakref
 
@@ -529,6 +530,7 @@ class EntityManager:
             return self._entities.keys() == other._entities.keys()
         return NotImplemented
 
+    @recursive_repr()
     def __repr__(self) -> str:
         entities = ", ".join([repr(entity) for entity in self])
         return f"{type(self).__name__}([{entities}])"

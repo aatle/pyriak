@@ -4,6 +4,7 @@ __all__ = ["SystemManager"]
 
 from collections.abc import Hashable, Iterable, Iterator
 from inspect import getattr_static
+from reprlib import recursive_repr
 from types import ModuleType
 from typing import TYPE_CHECKING, Any, Generic, NamedTuple, TypeVar
 from weakref import ref as weakref
@@ -288,6 +289,7 @@ class SystemManager:
             return self._systems.keys() == other._systems.keys()
         return NotImplemented
 
+    @recursive_repr()
     def __repr__(self) -> str:
         systems = ", ".join([repr(system) for system in self])
         return f"{type(self).__name__}([{systems}])"

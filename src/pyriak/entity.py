@@ -3,6 +3,7 @@
 __all__ = ["Entity", "EntityId"]
 
 from collections.abc import Iterable, Iterator, KeysView
+from reprlib import recursive_repr
 from typing import TYPE_CHECKING, NewType, TypeVar, overload
 from uuid import uuid4
 
@@ -238,6 +239,7 @@ class Entity:
             return self._components == other._components
         return NotImplemented
 
+    @recursive_repr()
     def __repr__(self) -> str:
         components = ", ".join([repr(component) for component in self])
         return f"{type(self).__name__}([{components}])"

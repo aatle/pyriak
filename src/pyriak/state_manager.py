@@ -3,6 +3,7 @@
 __all__ = ["StateManager"]
 
 from collections.abc import Iterable, Iterator, KeysView
+from reprlib import recursive_repr
 from typing import TypeVar, overload
 
 from pyriak import _SENTINEL, EventQueue
@@ -224,6 +225,7 @@ class StateManager:
             return self._states == other._states
         return NotImplemented
 
+    @recursive_repr()
     def __repr__(self) -> str:
         states = ", ".join([repr(state) for state in self])
         return f"{type(self).__name__}([{states}])"
