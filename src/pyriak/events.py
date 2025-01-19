@@ -22,6 +22,7 @@ __all__ = [
 ]
 
 from collections.abc import Hashable
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from pyriak.eventkey import set_key as _set_key
@@ -37,6 +38,7 @@ if TYPE_CHECKING:
 _T = TypeVar("_T")
 
 
+@dataclass
 class EntityAdded:
     """An event for when an Entity is added to the EntityManager.
 
@@ -44,10 +46,10 @@ class EntityAdded:
         entity: The entity added to the manager.
     """
 
-    def __init__(self, entity: "Entity") -> None:
-        self.entity = entity
+    entity: "Entity"
 
 
+@dataclass
 class EntityRemoved:
     """An event for when an Entity is removed from the EntityManager.
 
@@ -55,8 +57,7 @@ class EntityRemoved:
         entity: The entity removed from the manager.
     """
 
-    def __init__(self, entity: "Entity") -> None:
-        self.entity = entity
+    entity: "Entity"
 
 
 def _component_type_key(event: "ComponentAdded | ComponentRemoved") -> type:
@@ -64,6 +65,7 @@ def _component_type_key(event: "ComponentAdded | ComponentRemoved") -> type:
 
 
 @_set_key(_component_type_key)
+@dataclass
 class ComponentAdded(Generic[_T]):
     """An event for when a component is added to the EntityManager.
 
@@ -77,12 +79,12 @@ class ComponentAdded(Generic[_T]):
         component: The component added.
     """
 
-    def __init__(self, entity: "Entity", component: _T) -> None:
-        self.entity = entity
-        self.component = component
+    entity: "Entity"
+    component: _T
 
 
 @_set_key(_component_type_key)
+@dataclass
 class ComponentRemoved(Generic[_T]):
     """An event for when a component is removed from the EntityManager.
 
@@ -97,9 +99,8 @@ class ComponentRemoved(Generic[_T]):
         component: The component removed.
     """
 
-    def __init__(self, entity: "Entity", component: _T) -> None:
-        self.entity = entity
-        self.component = component
+    entity: "Entity"
+    component: _T
 
 
 def _system_key(event: "SystemAdded | SystemRemoved") -> "System":
@@ -107,6 +108,7 @@ def _system_key(event: "SystemAdded | SystemRemoved") -> "System":
 
 
 @_set_key(_system_key)
+@dataclass
 class SystemAdded:
     """An event for when a system is added to the SystemManager.
 
@@ -116,11 +118,11 @@ class SystemAdded:
         system: The system added to the manager.
     """
 
-    def __init__(self, system: "System") -> None:
-        self.system = system
+    system: "System"
 
 
 @_set_key(_system_key)
+@dataclass
 class SystemRemoved:
     """An event for when a system is removed from the SystemManager.
 
@@ -130,8 +132,7 @@ class SystemRemoved:
         system: The system removed from the manager.
     """
 
-    def __init__(self, system: "System") -> None:
-        self.system = system
+    system: "System"
 
 
 def _state_type_key(event: "StateAdded | StateRemoved") -> type:
@@ -139,6 +140,7 @@ def _state_type_key(event: "StateAdded | StateRemoved") -> type:
 
 
 @_set_key(_state_type_key)
+@dataclass
 class StateAdded(Generic[_T]):
     """An event for when a state is added to the StateManager.
 
@@ -148,11 +150,11 @@ class StateAdded(Generic[_T]):
         state: The state added to the manager.
     """
 
-    def __init__(self, state: _T) -> None:
-        self.state = state
+    state: _T
 
 
 @_set_key(_state_type_key)
+@dataclass
 class StateRemoved(Generic[_T]):
     """An event for when a state is removed from the StateManager.
 
@@ -162,20 +164,17 @@ class StateRemoved(Generic[_T]):
         state: The state removed from the manager.
     """
 
-    def __init__(self, state: _T) -> None:
-        self.state = state
+    state: _T
 
 
 def _handler_key(event: "EventHandlerAdded | EventHandlerRemoved") -> type:
     return event.event_type
 
 
+@dataclass
 class _EventHandlerEvent(Generic[_T]):
-    def __init__(
-        self, _binding: "Binding[_T, Any]", _handler: "_EventHandler[_T]"
-    ) -> None:
-        self._binding = _binding
-        self._handler = _handler
+    _binding: "Binding[_T, Any]"
+    _handler: "_EventHandler[_T]"
 
     @property
     def system(self) -> "System":
