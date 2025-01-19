@@ -522,6 +522,17 @@ class EntityManager:
             return obj.id in self._entities
         return obj in self._entities
 
+    def __eq__(self, other: object, /) -> bool:
+        if self is other:
+            return True
+        if isinstance(other, EntityManager):
+            return self._entities.keys() == other._entities.keys()
+        return NotImplemented
+
+    def __repr__(self) -> str:
+        entities = ", ".join([repr(entity) for entity in self])
+        return f"{type(self).__name__}([{entities}])"
+
     def clear(self) -> None:
         self.remove(*self)
 
