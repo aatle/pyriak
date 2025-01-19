@@ -281,6 +281,17 @@ class SystemManager:
     def __contains__(self, obj: object, /) -> bool:
         return obj in self._systems
 
+    def __eq__(self, other: object, /) -> bool:
+        if self is other:
+            return True
+        if isinstance(other, SystemManager):
+            return self._systems.keys() == other._systems.keys()
+        return NotImplemented
+
+    def __repr__(self) -> str:
+        systems = ", ".join([repr(system) for system in self])
+        return f"{type(self).__name__}([{systems}])"
+
     def clear(self) -> None:
         """Remove all systems and event handlers from self.
 
