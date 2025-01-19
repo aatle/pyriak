@@ -111,7 +111,7 @@ class EventKeyFunctions:
         for event_type, key in dict(other).items():
             self[event_type] = key
 
-    def keys(self) -> Iterator[type]:
+    def keys(self) -> Iterator[type[Any]]:  # NOTE: mypy bug, type vs type[Any]
         return self._data.keys()
 
     def values(self) -> Iterator[KeyFunction[Any]]:
