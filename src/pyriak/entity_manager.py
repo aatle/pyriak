@@ -138,6 +138,13 @@ class QueryResult:
 
     __hash__ = None  # type: ignore[assignment]
 
+    def __repr__(self) -> str:
+        entities = ", ".join([repr(entity) for entity in self.entities])
+        return (
+            f"<{type(self).__name__} of "
+            f"entities=[{entities}], types={self._types!r}, merge={self._merge!r}>"
+        )
+
 
 class _Components:
     """The components attribute of an EntityManager, exposes more functionality.

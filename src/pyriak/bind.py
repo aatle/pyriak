@@ -84,6 +84,13 @@ class Binding(Generic[_T, _R_co]):
             return callback
         return descr_get(callback, obj, objtype)
 
+    def __repr__(self) -> str:
+        args = (
+            f"callback={self._callback_!r}, event_type={self._event_type_!r}, "
+            f"priority={self._priority_!r}, keys={set(self._keys_)!r}"
+        )
+        return f"<{type(self).__name__}({args})>"
+
 
 @overload
 def bind(
