@@ -53,14 +53,14 @@ System: _TypeAlias = _Hashable
 EventQueue: _TypeAlias = _MutableSequence[object]
 
 
-dead_weakref: _weakref[_Any] = _weakref(set())
+dead_weakref: _Final[_weakref[_Any]] = _weakref(set())
 
 
 class _Sentinel(_Enum):
     SENTINEL = 1
 
 
-_SENTINEL: _Sentinel = _Sentinel.SENTINEL
+_SENTINEL: _Final[_Sentinel] = _Sentinel.SENTINEL
 
 
 # circular imports

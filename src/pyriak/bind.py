@@ -7,6 +7,7 @@ from functools import update_wrapper
 from typing import (
     TYPE_CHECKING,
     Any,
+    Final,
     Generic,
     TypeAlias,
     TypeVar,
@@ -27,7 +28,7 @@ _R_co = TypeVar("_R_co", covariant=True)
 _Callback: TypeAlias = Callable[["Space", _T], _R_co]
 
 
-_empty_frozenset: frozenset[object] = frozenset()
+_empty_frozenset: Final[frozenset[object]] = frozenset()
 
 
 class Binding(Generic[_T, _R_co]):
