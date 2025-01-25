@@ -68,7 +68,7 @@ select = [
     "SLOT",
     "PERF",
     "ANN",
-    # "FURB",
+    "FURB",
 ]
 ignore = ["SIM105", "PERF203", "ISC001", "PLC0414", "RUF022", "RUF023", "ANN401"]
 
