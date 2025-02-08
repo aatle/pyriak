@@ -25,7 +25,7 @@ python = ">=3.10"
 
 [tool.poetry.group.dev.dependencies]
 ruff = ">=0.8.0"
-mypy = "^1.10.0"
+mypy = "^1.14.0"
 
 [tool.poetry.urls]
 Repository = "https://github.com/aatle/pyriak.git"
@@ -78,21 +78,29 @@ combine-as-imports = true
 
 [tool.mypy]
 enable_error_code = [
-    "ignore-without-code",
-    "redundant-expr",
     "possibly-undefined",
+    "redundant-expr",
     "truthy-bool",
     "truthy-iterable",
+    "ignore-without-code",
+    "redundant-self",
+    "unused-ignore",
+    "unimported-reveal",
     "mutable-override",
+    "deprecated",
 ]
-disallow_subclassing_any = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-warn_redundant_casts = true
 warn_unused_ignores = true
 warn_return_any = true
+warn_redundant_casts = true
+warn_unreachable = true
+warn_incomplete_stub = true
+local_partial_types = true
 no_implicit_reexport = true
 strict_equality = true
+check_untyped_defs = true
 extra_checks = true
 disallow_any_unimported = true
-warn_unreachable = true
+disallow_subclassing_any = true
+disallow_incomplete_defs = true
+disallow_untyped_decorators = true
+disallow_untyped_calls = true
