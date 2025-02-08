@@ -7,7 +7,7 @@ from reprlib import recursive_repr
 from typing import Any, Callable, TypeVar, overload
 from weakref import ref as weakref
 
-from pyriak import _SENTINEL, EventQueue, dead_weakref
+from pyriak import _SENTINEL, EventQueue, _Sentinel, dead_weakref
 from pyriak.entity import Entity, EntityId
 from pyriak.events import ComponentAdded, ComponentRemoved, EntityAdded, EntityRemoved
 
@@ -478,14 +478,18 @@ class EntityManager:
     def get(self, entity_id: EntityId, /) -> Entity | None: ...
     @overload
     def get(self, entity_id: EntityId, default: _T, /) -> Entity | _T: ...
-    def get(self, entity_id, default=None, /):
+    def get(
+        self, entity_id: EntityId, default: _T | None = None, /
+    ) -> Entity | _T | None:
         return self._entities.get(entity_id, default)
 
     @overload
     def pop(self, entity_id: EntityId, /) -> Entity: ...
     @overload
     def pop(self, entity_id: EntityId, default: _T, /) -> Entity | _T: ...
-    def pop(self, entity_id, default=_SENTINEL, /):
+    def pop(
+        self, entity_id: EntityId, default: _T | _Sentinel = _SENTINEL, /
+    ) -> Entity | _T:
         try:
             entity = self._entities[entity_id]
         except KeyError:
@@ -499,7 +503,7 @@ class EntityManager:
     def ids(self, /) -> KeysView[EntityId]: ...
     @overload
     def ids(self, component_type: type, /) -> set[EntityId]: ...
-    def ids(self, component_type=None, /):
+    def ids(self, component_type: type | None = None, /) -> AbstractSet[EntityId]:
         """Return a set of all entity ids that contain the given component type.
 
         If no component type is given or is None, then return a readonly set-like

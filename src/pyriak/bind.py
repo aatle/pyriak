@@ -14,7 +14,7 @@ from typing import (
     overload,
 )
 
-from pyriak import _SENTINEL
+from pyriak import _SENTINEL, _Sentinel
 from pyriak.eventkey import key_functions
 
 if TYPE_CHECKING:
@@ -104,7 +104,14 @@ def bind(
 def bind(
     event_type: type[_T], priority: Any, /, *, keys: Iterable[Hashable]
 ) -> Callable[[_Callback[_T, _R_co]], Binding[_T, _R_co]]: ...
-def bind(event_type, priority, /, *, key=_SENTINEL, keys=_SENTINEL):
+def bind(
+    event_type: type[_T],
+    priority: Any,
+    /,
+    *,
+    key: Hashable | _Sentinel = _SENTINEL,
+    keys: Iterable[Hashable] | _Sentinel = _SENTINEL,
+) -> Callable[[_Callback[_T, _R_co]], Binding[_T, _R_co]]:
     """Bind a callback to an event type.
 
     To use, define a function that takes two arguments, space and event.

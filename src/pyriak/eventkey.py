@@ -94,7 +94,9 @@ class EventKeyFunctions:
     def get(self, event_type: type[_T], /) -> KeyFunction[_T] | None: ...
     @overload
     def get(self, event_type: type[_T], default: _D, /) -> KeyFunction[_T] | _D: ...
-    def get(self, event_type, default=None, /):
+    def get(
+        self, event_type: type[_T], default: _D | None = None, /
+    ) -> KeyFunction[_T] | _D | None:
         return self._data.get(event_type, default)
 
     def setdefault(

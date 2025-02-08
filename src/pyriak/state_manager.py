@@ -6,7 +6,7 @@ from collections.abc import Iterable, Iterator, KeysView
 from reprlib import recursive_repr
 from typing import TypeVar, overload
 
-from pyriak import _SENTINEL, EventQueue
+from pyriak import _SENTINEL, EventQueue, _Sentinel
 from pyriak.events import StateAdded, StateRemoved
 
 _T = TypeVar("_T")
@@ -185,14 +185,16 @@ class StateManager:
     def get(self, state_type: type[_T], /) -> _T | None: ...
     @overload
     def get(self, state_type: type[_T], default: _D, /) -> _T | _D: ...
-    def get(self, state_type, default=None, /):
-        return self._states.get(state_type, default)
+    def get(self, state_type: type[_T], default: _D | None = None, /) -> _T | _D | None:
+        return self._states.get(state_type, default)  # type: ignore[return-value]
 
     @overload
     def pop(self, state_type: type[_T], /) -> _T: ...
     @overload
     def pop(self, state_type: type[_T], default: _D, /) -> _T | _D: ...
-    def pop(self, state_type, default=_SENTINEL, /):
+    def pop(
+        self, state_type: type[_T], default: _D | _Sentinel = _SENTINEL, /
+    ) -> _T | _D:
         try:
             state = self[state_type]
         except KeyError:

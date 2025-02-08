@@ -7,7 +7,7 @@ from reprlib import recursive_repr
 from typing import TYPE_CHECKING, NewType, TypeVar, overload
 from uuid import uuid4
 
-from pyriak import _SENTINEL, dead_weakref
+from pyriak import _SENTINEL, _Sentinel, dead_weakref
 
 if TYPE_CHECKING:
     from weakref import ref as weakref
@@ -199,16 +199,23 @@ class Entity:
     def get(self, component_type: type[_T], /) -> _T | None: ...
     @overload
     def get(self, component_type: type[_T], default: _D, /) -> _T | _D: ...
-    def get(self, component_type, default=None, /):
-        return self._components.get(component_type, default)
+    def get(
+        self, component_type: type[_T], default: _D | None = None, /
+    ) -> _T | _D | None:
+        return self._components.get(
+            component_type,
+            default,
+        )  # type: ignore[return-value]
 
     @overload
     def pop(self, component_type: type[_T], /) -> _T: ...
     @overload
     def pop(self, component_type: type[_T], default: _D, /) -> _T | _D: ...
-    def pop(self, component_type, default=_SENTINEL, /):
+    def pop(
+        self, component_type: type[_T], default: _D | _Sentinel = _SENTINEL, /
+    ) -> _T | _D:
         try:
-            component = self._components[component_type]
+            component = self[component_type]
         except KeyError:
             if default is _SENTINEL:
                 raise
