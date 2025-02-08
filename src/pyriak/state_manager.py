@@ -9,7 +9,6 @@ from typing import TypeVar, overload
 from pyriak import _SENTINEL, EventQueue
 from pyriak.events import StateAdded, StateRemoved
 
-
 _T = TypeVar("_T")
 _D = TypeVar("_D")
 

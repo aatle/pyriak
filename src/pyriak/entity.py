@@ -9,7 +9,6 @@ from uuid import uuid4
 
 from pyriak import _SENTINEL, dead_weakref
 
-
 if TYPE_CHECKING:
     from weakref import ref as weakref
 

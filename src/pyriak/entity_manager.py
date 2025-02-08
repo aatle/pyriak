@@ -11,7 +11,6 @@ from pyriak import _SENTINEL, EventQueue, dead_weakref
 from pyriak.entity import Entity, EntityId
 from pyriak.events import ComponentAdded, ComponentRemoved, EntityAdded, EntityRemoved
 
-
 _T = TypeVar("_T")
 
 

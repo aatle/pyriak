@@ -31,7 +31,6 @@ from collections.abc import Callable, Hashable, Iterator, Mapping
 from typing import Any, TypeAlias, TypeVar, overload
 from weakref import WeakKeyDictionary, ref as weakref
 
-
 _T = TypeVar("_T")
 _D = TypeVar("_D")
 

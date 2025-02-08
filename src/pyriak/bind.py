@@ -17,7 +17,6 @@ from typing import (
 from pyriak import _SENTINEL
 from pyriak.eventkey import key_functions
 
-
 if TYPE_CHECKING:
     from pyriak.space import Space
 

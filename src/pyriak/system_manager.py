@@ -19,7 +19,6 @@ from pyriak.events import (
     SystemRemoved,
 )
 
-
 if TYPE_CHECKING:
     from pyriak.space import Space
 
