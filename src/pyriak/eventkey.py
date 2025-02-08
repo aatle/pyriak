@@ -91,14 +91,14 @@ class EventKeyFunctions:
         data[event_type] = key
 
     @overload
-    def get(self, event_type: type[_T]) -> KeyFunction[_T] | None: ...
+    def get(self, event_type: type[_T], /) -> KeyFunction[_T] | None: ...
     @overload
-    def get(self, event_type: type[_T], default: _D) -> KeyFunction[_T] | _D: ...
-    def get(self, event_type, default=None):
+    def get(self, event_type: type[_T], default: _D, /) -> KeyFunction[_T] | _D: ...
+    def get(self, event_type, default=None, /):
         return self._data.get(event_type, default)
 
     def setdefault(
-        self, event_type: type[_T], default: KeyFunction[_T]
+        self, event_type: type[_T], default: KeyFunction[_T], /
     ) -> KeyFunction[_T]:
         data = self._data
         if event_type in data:
@@ -106,7 +106,7 @@ class EventKeyFunctions:
         data[event_type] = default
         return default
 
-    def update(self, other: Mapping[type, KeyFunction[Any]]) -> None:
+    def update(self, other: Mapping[type, KeyFunction[Any]], /) -> None:
         for event_type, key in dict(other).items():
             self[event_type] = key
 
