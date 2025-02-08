@@ -43,7 +43,12 @@ __all__ = [
 
 from collections.abc import Hashable as _Hashable, MutableSequence as _MutableSequence
 from enum import Enum as _Enum
-from typing import Any as _Any, Final as _Final, TypeAlias as _TypeAlias
+from typing import (
+    Any as _Any,
+    Final as _Final,
+    Literal as _Literal,
+    TypeAlias as _TypeAlias,
+)
 from weakref import ref as _weakref
 
 System: _TypeAlias = _Hashable
@@ -59,7 +64,7 @@ class _Sentinel(_Enum):
     SENTINEL = 1
 
 
-_SENTINEL: _Final[_Sentinel] = _Sentinel.SENTINEL
+_SENTINEL: _Final[_Literal[_Sentinel.SENTINEL]] = _Sentinel.SENTINEL
 
 
 # circular imports
