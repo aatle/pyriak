@@ -70,7 +70,7 @@ select = [
     "ANN",
     "FURB",
 ]
-ignore = ["SIM105", "PERF203", "PLC0414", "RUF022", "RUF023", "ANN401"]
+ignore = ["SIM105", "PERF203", "ISC001", "PLC0414", "RUF022", "RUF023", "ANN401"]
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
