@@ -27,8 +27,10 @@ creating key functions, e.g. attrgetter.
 __all__ = ["key_functions", "set_key", "KeyFunction"]
 
 from collections.abc import Callable, Hashable, Iterator, Mapping
-from typing import Any, TypeAlias, TypeVar
+from typing import Any, TypeAlias, TypeVar, overload
 from weakref import WeakKeyDictionary
+
+from pyriak import _SENTINEL, _Sentinel
 
 _T = TypeVar("_T")
 _D = TypeVar("_D")
@@ -58,10 +60,18 @@ collector can delete them, not reference counting.
 """
 
 
-def set_key(key: KeyFunction[_T], /) -> Callable[[type[_T]], type[_T]]:
+@overload
+def set_key(key: KeyFunction[_T], /) -> Callable[[type[_T]], type[_T]]: ...
+@overload
+def set_key(cls: type[_T], key: KeyFunction[_T], /) -> None: ...
+def set_key(
+    arg1: KeyFunction[_T] | type[_T], arg2: _Sentinel | KeyFunction[_T] = _SENTINEL, /
+) -> Callable[[type[_T]], type[_T]] | None:
     """Assign a key function to an event type.
 
-    Use as a decorator to assign a key function to an event class definition.
+    It can be used as either a decorator or a normal function.
+    ---------
+    Decorator
 
     Args:
         key: The key function to be assigned.
@@ -70,10 +80,36 @@ def set_key(key: KeyFunction[_T], /) -> Callable[[type[_T]], type[_T]]:
         A decorator that sets the key function on its argument
         and then returns the argument.
         This decorator raises ValueError if the type already has a key function.
+
+    Example:
+        @set_key(lambda event: event.key)
+        class Event:
+            ...
+    --------
+    Function
+
+    Args:
+        cls: The event type to be assigned the key function.
+        key: The key function to be assigned.
+
+    Raises:
+        ValueError: If the type already has a key function.
+
+    Example:
+        from event import Event
+        set_key(Event, lambda event: event.key)
     """
 
+    if arg2 is not _SENTINEL:
+        if arg1 in key_functions:
+            raise ValueError(f"event type {arg1!r} already has a key function")
+        key_functions[arg1] = arg2  # type: ignore[index]
+        return None
+
     def decorator(cls: type[_T], /) -> type[_T]:
-        key_functions[cls] = key  # type: ignore[index]
+        if cls in key_functions:
+            raise ValueError(f"event type {cls!r} already has a key function")
+        key_functions[cls] = arg1  # type: ignore[index]
         return cls
 
     return decorator
