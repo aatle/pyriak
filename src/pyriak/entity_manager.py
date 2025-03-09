@@ -278,7 +278,6 @@ class EntityManager:
             ValueError: If self already has one of the entities.
             RuntimeError: If one of the entities is already added to another manager.
         """
-        component_types = self._type_cache
         self_entities = self._entities
         self_weakref: weakref[EntityManager] = weakref(self)
         event_queue = self.event_queue
@@ -290,18 +289,10 @@ class EntityManager:
                 raise RuntimeError(f"{entity!r} already added to another manager")
             self_entities[entity_id] = entity
             entity._manager = self_weakref
-            for component_type in entity.types():
-                try:
-                    component_types[component_type].add(entity_id)
-                except KeyError:
-                    component_types[component_type] = {entity_id}
             if event_queue is not None:
-                event_queue.extend(
-                    [
-                        EntityAdded(entity),
-                        *[ComponentAdded(entity, component) for component in entity],
-                    ]
-                )
+                event_queue.append(EntityAdded(entity))
+            for component in entity:
+                self._component_added(entity, component)
 
     def update(self, *entities: Entity) -> None:
         """Update self with an arbitrary number of entities.
@@ -352,7 +343,6 @@ class EntityManager:
         Raises:
             ValueError: If one of the entities is not in self.
         """
-        type_cache = self._type_cache
         event_queue = self.event_queue
         for entity in entities:
             entity_id = entity.id
@@ -361,18 +351,10 @@ class EntityManager:
             except KeyError:
                 raise ValueError(entity) from None
             entity._manager = dead_weakref
-            for component_type in entity.types():
-                component_type_entities = type_cache[component_type]
-                component_type_entities.remove(entity_id)
-                if not component_type_entities:
-                    del type_cache[component_type]
+            for component in entity:
+                self._component_removed(entity, component)
             if event_queue is not None:
-                event_queue.extend(
-                    [
-                        *[ComponentRemoved(entity, component) for component in entity],
-                        EntityRemoved(entity),
-                    ]
-                )
+                event_queue.append(EntityRemoved(entity))
 
     def discard(self, *entities: Entity) -> None:
         """Remove entities, skipping any not in self.
