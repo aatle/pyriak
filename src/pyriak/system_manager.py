@@ -11,7 +11,7 @@ from weakref import ref as weakref
 
 from pyriak import EventQueue, System, dead_weakref
 from pyriak.bind import Binding, _Callback
-from pyriak.eventkey import key_functions
+from pyriak.event_key import key_functions
 from pyriak.events import (
     EventHandlerAdded,
     EventHandlerRemoved,

@@ -25,7 +25,7 @@ from collections.abc import Hashable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
-from pyriak.eventkey import set_key as _set_key
+from pyriak.event_key import set_key as _set_key
 
 if TYPE_CHECKING:
     from pyriak import System

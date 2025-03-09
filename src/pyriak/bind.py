@@ -15,7 +15,7 @@ from typing import (
 )
 
 from pyriak import _SENTINEL, _Sentinel
-from pyriak.eventkey import key_functions
+from pyriak.event_key import key_functions
 
 if TYPE_CHECKING:
     from pyriak.space import Space
