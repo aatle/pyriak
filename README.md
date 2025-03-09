@@ -155,6 +155,8 @@ Define component classes for aspects of the objects that will be in your program
 Some classes don't even need to hold data: it's presence on the entity serves as a marker, or 'tag'.
 ```python
 # components.py
+from dataclasses import dataclass
+
 @dataclass
 class Position:
     x: float
@@ -184,7 +186,7 @@ This will select all entities in the space that contain every component type pas
 This object has methods such as `.zip()`, which gives an iterator of the tuple of components for each entity.
 E.g.,
 ```py
-list(space.query(Spam, Eggs, Foo)) --> [  # for every entity with all three components
+list(space.query(Spam, Eggs, Foo).zip()) --> [  # for every entity with all three components
     (Spam(5), Eggs("a"), Foo()),  # components from first entity
     (Spam(1), Eggs("b"), Foo()),  # components from second entity
     ...
