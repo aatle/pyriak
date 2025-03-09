@@ -46,7 +46,7 @@ All keys must be hashable.
 """
 
 
-class EventKeyFunctions:
+class EventKeyFunctions(Mapping[type, KeyFunction[Any]]):
     """A dictionary of event types to key functions.
 
     Once a key function is set for an event type, it cannot be
@@ -112,13 +112,17 @@ class EventKeyFunctions:
         for event_type, key in dict(other).items():
             self[event_type] = key
 
-    def keys(self) -> Iterator[type[Any]]:  # NOTE: mypy bug, type vs type[Any]
+    # NOTE: WeakKeyDictionary incompatible with Mapping (iterators instead of views)
+    # NOTE: mypy bug, type vs type[Any], when converting to dict()
+    def keys(self) -> Iterator[type[Any]]:  # type: ignore[override]
         return self._data.keys()
 
-    def values(self) -> Iterator[KeyFunction[Any]]:
+    def values(self) -> Iterator[KeyFunction[Any]]:  # type: ignore[override]
         return self._data.values()
 
-    def items(self) -> Iterator[tuple[type, KeyFunction[Any]]]:
+    def items(  # type: ignore[override]
+        self,
+    ) -> Iterator[tuple[type, KeyFunction[Any]]]:
         return self._data.items()
 
     def __len__(self) -> int:
