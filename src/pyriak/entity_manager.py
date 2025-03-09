@@ -95,10 +95,8 @@ class QueryResult:
             An iterator yielding same-length tuples of components.
 
         Example:
-            Typical usage of zip() method::
-
-                for sprite, position in space.query(Sprite, Position).zip():
-                    render(sprite, position)
+            for sprite, position in space.query(Sprite, Position).zip():
+                render(sprite, position)
         """
         if not component_types:
             component_types = self.types
@@ -122,7 +120,7 @@ class QueryResult:
             An iterator yielding same-length tuples of the entity and its components.
 
         Example:
-            Typical usage of zip_entity() method::
+            Typical usage of zip_entity() method
 
                 for entity, lifetime in space.query(Lifetime).zip_entity():
                     if lifetime.timer < 0:

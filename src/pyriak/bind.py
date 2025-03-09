@@ -157,11 +157,9 @@ def bind(
             In the decorator, if the object is already a binding.
 
     Example:
-        Typical usage of bind() decorator::
-
-            @bind(UpdateGame, 500)
-            def update_physics(space: Space, event: UpdateGame):
-                ...
+        @bind(UpdateGame, 500)
+        def update_physics(space: Space, event: UpdateGame) -> None:
+            ...
     """
     if not isinstance(event_type, type):
         raise TypeError(f"{event_type!r} is not a type")

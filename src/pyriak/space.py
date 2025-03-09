@@ -93,10 +93,8 @@ class Space:
             TypeError: If exactly zero component types were given.
 
         Example:
-            Typical usage of query() method::
-
-                for sprite, position in space.query(Sprite, Position).zip():
-                    render(sprite, position)
+            for sprite, position in space.query(Sprite, Position).zip():
+                render(sprite, position)
         """
         return self.entities.query(*component_types, merge=merge)
 
