@@ -24,7 +24,7 @@ The operator module has useful functions for
 creating key functions, e.g. attrgetter.
 """
 
-__all__ = ["key_functions", "set_key", "KeyFunction"]
+__all__ = ["set_key", "key_functions", "KeyFunction"]
 
 from collections.abc import Callable, Hashable, Iterator, Mapping
 from typing import Any, TypeAlias, TypeVar, overload
@@ -33,7 +33,6 @@ from weakref import WeakKeyDictionary
 from pyriak import _SENTINEL, _Sentinel
 
 _T = TypeVar("_T")
-_D = TypeVar("_D")
 
 del TypeVar
 
