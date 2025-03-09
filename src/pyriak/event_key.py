@@ -17,9 +17,8 @@ An event type either has or doesn't have a key function, and
 this is global across the entire python process.
 A key function cannot be removed once set.
 
-To set a key function on an event type, either use the
-key_functions variable as a mapping to do it manually,
-or use the set_key() function/decorator on the class (preferred).
+To set a key function on an event type, use the set_key()
+as a function or decorator on the class.
 
 The operator module has useful functions for
 creating key functions, e.g. attrgetter.
@@ -28,8 +27,8 @@ creating key functions, e.g. attrgetter.
 __all__ = ["key_functions", "set_key", "KeyFunction"]
 
 from collections.abc import Callable, Hashable, Iterator, Mapping
-from typing import Any, TypeAlias, TypeVar, overload
-from weakref import WeakKeyDictionary, ref as weakref
+from typing import Any, TypeAlias, TypeVar
+from weakref import WeakKeyDictionary
 
 _T = TypeVar("_T")
 _D = TypeVar("_D")
@@ -46,128 +45,17 @@ All keys must be hashable.
 """
 
 
-class EventKeyFunctions(Mapping[type, KeyFunction[Any]]):
-    """A dictionary of event types to key functions.
+key_functions: Mapping[type, KeyFunction[Any]] = WeakKeyDictionary()
+"""The global read-only mapping of event types to key functions.
 
-    Once a key function is set for an event type, it cannot be
-    deleted or replaced.
-    Currently, there is only one key function mapping per process,
-    accessible as pyriak.key_functions.
+Once a key function is set for an event type, it cannot be
+deleted or replaced.
 
-    Internally, EventKeyFunctions is implemented using a WeakKeyDictionary,
-    meaning that event types are not kept alive just because they
-    have a key function. Since type objects usually don't get deleted,
-    this feature may rarely be used.
-    Note: In CPython, type objects have reference cycles, so only the garbage
-    collector can delete them, not reference counting.
-    """
-
-    __slots__ = ("_data",)
-
-    _data: WeakKeyDictionary[type, KeyFunction[Any]]
-
-    def __init__(
-        self,
-        dict: Mapping[type, KeyFunction[Any]] | None = None,  # noqa: A002
-    ) -> None:
-        self._data = WeakKeyDictionary()
-        if dict is not None:
-            self.update(dict)
-
-    def __getitem__(self, event_type: type[_T]) -> KeyFunction[_T]:
-        return self._data[event_type]
-
-    def __setitem__(self, event_type: type[_T], key: KeyFunction[_T]) -> None:
-        """Set a key function for an event type.
-
-        Raises:
-            ValueError: If the given event type already has a key function set.
-        """
-        data = self._data
-        if event_type in data:
-            raise ValueError(
-                f"cannot reassign key function for event type {event_type!r}"
-            )
-        data[event_type] = key
-
-    @overload
-    def get(self, event_type: type[_T], /) -> KeyFunction[_T] | None: ...
-    @overload
-    def get(self, event_type: type[_T], default: _D, /) -> KeyFunction[_T] | _D: ...
-    def get(
-        self, event_type: type[_T], default: _D | None = None, /
-    ) -> KeyFunction[_T] | _D | None:
-        return self._data.get(event_type, default)
-
-    def setdefault(
-        self, event_type: type[_T], default: KeyFunction[_T], /
-    ) -> KeyFunction[_T]:
-        data = self._data
-        if event_type in data:
-            return data[event_type]
-        data[event_type] = default
-        return default
-
-    def update(self, other: Mapping[type, KeyFunction[Any]], /) -> None:
-        for event_type, key in dict(other).items():
-            self[event_type] = key
-
-    # NOTE: WeakKeyDictionary incompatible with Mapping (iterators instead of views)
-    # NOTE: mypy bug, type vs type[Any], when converting to dict()
-    def keys(self) -> Iterator[type[Any]]:  # type: ignore[override]
-        return self._data.keys()
-
-    def values(self) -> Iterator[KeyFunction[Any]]:  # type: ignore[override]
-        return self._data.values()
-
-    def items(  # type: ignore[override]
-        self,
-    ) -> Iterator[tuple[type, KeyFunction[Any]]]:
-        return self._data.items()
-
-    def __len__(self) -> int:
-        return len(self._data)
-
-    def __contains__(self, obj: object, /) -> bool:
-        return obj in self._data
-
-    def __iter__(self) -> Iterator[type]:
-        return iter(self._data)
-
-    def __or__(
-        self, other: Mapping[type, KeyFunction[Any]]
-    ) -> WeakKeyDictionary[type, KeyFunction[Any]]:
-        return self._data | other
-
-    def __ror__(
-        self, other: Mapping[type, KeyFunction[Any]]
-    ) -> WeakKeyDictionary[type, KeyFunction[Any]]:
-        return other | self._data
-
-    def __ior__(self, other: Mapping[type, KeyFunction[Any]]) -> "EventKeyFunctions":
-        self.update(other)
-        return self
-
-    def __eq__(self, other: object) -> bool:
-        if self is other:
-            return True
-        if isinstance(other, EventKeyFunctions):
-            return self._data == other._data
-        return self._data.__eq__(other)
-
-    def copy(self) -> "EventKeyFunctions":  # TODO: use typing.Self in 3.11+
-        cls = type(self)
-        obj = cls.__new__(cls)
-        obj._data = self._data.copy()
-        return obj
-
-    __copy__ = copy
-
-    def keyrefs(self) -> list[weakref[type]]:
-        return self._data.keyrefs()
-
-
-key_functions = EventKeyFunctions()
+This uses WeakKeyDictionary meaning that event types are not kept alive by
+the mapping. This is necessary in case types are dynamically defined.
+Note: In CPython, type objects have reference cycles, so only the garbage
+collector can delete them, not reference counting.
+"""
 
 
 def set_key(key: KeyFunction[_T], /) -> Callable[[type[_T]], type[_T]]:
@@ -185,7 +73,7 @@ def set_key(key: KeyFunction[_T], /) -> Callable[[type[_T]], type[_T]]:
     """
 
     def decorator(cls: type[_T], /) -> type[_T]:
-        key_functions[cls] = key
+        key_functions[cls] = key  # type: ignore[index]
         return cls
 
     return decorator
