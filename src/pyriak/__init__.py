@@ -39,6 +39,8 @@ __all__ = [
     "EventQueue",
     "key_functions",
     "set_key",
+    "tag",
+    "tag_types",
 ]
 
 from collections.abc import Hashable as _Hashable, MutableSequence as _MutableSequence
@@ -73,6 +75,7 @@ from pyriak.entity import Entity, EntityId  # noqa: E402
 from pyriak.entity_manager import QueryResult as QueryResult  # noqa: E402
 from pyriak.event_key import key_functions, set_key  # noqa: E402
 from pyriak.space import Space  # noqa: E402
+from pyriak.tag_component import tag, tag_types  # noqa: E402
 
 NULL_ID: _Final[EntityId] = EntityId(0)
 

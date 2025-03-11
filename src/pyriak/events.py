@@ -21,11 +21,12 @@ __all__ = [
     "StateRemoved",
 ]
 
-from collections.abc import Hashable
+from collections.abc import Hashable, Iterator
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from pyriak.event_key import set_key as _set_key
+from pyriak.tag_component import tag_types as _tag_types
 
 if TYPE_CHECKING:
     from pyriak import System
@@ -59,11 +60,16 @@ class EntityRemoved:
     entity: "Entity"
 
 
-def _component_type_key(event: "ComponentAdded | ComponentRemoved") -> type:
-    return type(event.component)
+def _component_tag_type_key(
+    event: "ComponentAdded | ComponentRemoved",
+) -> type | Iterator[Hashable | type]:
+    component_type = type(event.component)
+    if component_type in _tag_types:
+        return iter((event.component, component_type))
+    return component_type
 
 
-@_set_key(_component_type_key)
+@_set_key(_component_tag_type_key)
 @dataclass
 class ComponentAdded(Generic[_T]):
     """An event for when a component is added to the EntityManager.
@@ -71,7 +77,8 @@ class ComponentAdded(Generic[_T]):
     Either, a component is added to an entity that is in the manager,
     or an entity with existing components is added to the manager.
 
-    The event key is the type of the component.
+    If the component is a tag, the event keys are the tag component and component type.
+    Otherwise, the one event key is the component type.
 
     Attributes:
         entity: The entity that the component is in.
@@ -82,7 +89,7 @@ class ComponentAdded(Generic[_T]):
     component: _T
 
 
-@_set_key(_component_type_key)
+@_set_key(_component_tag_type_key)
 @dataclass
 class ComponentRemoved(Generic[_T]):
     """An event for when a component is removed from the EntityManager.
@@ -91,7 +98,8 @@ class ComponentRemoved(Generic[_T]):
     or an entity with components is removed from the manager.
     For the latter case, the component may still be on the entity.
 
-    The event key is the type of the component.
+    If the component is a tag, the event keys are the tag component and component type.
+    Otherwise, the one event key is the component type.
 
     Attributes:
         entity: The entity that the component was in.

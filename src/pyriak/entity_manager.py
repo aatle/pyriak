@@ -2,7 +2,14 @@
 
 __all__ = ["EntityManager", "QueryResult"]
 
-from collections.abc import Collection, Iterable, Iterator, KeysView, Set as AbstractSet
+from collections.abc import (
+    Collection,
+    Hashable,
+    Iterable,
+    Iterator,
+    KeysView,
+    Set as AbstractSet,
+)
 from reprlib import recursive_repr
 from typing import Any, Callable, TypeVar, overload
 from weakref import ref as weakref
@@ -10,6 +17,7 @@ from weakref import ref as weakref
 from pyriak import _SENTINEL, EventQueue, _Sentinel, dead_weakref
 from pyriak.entity import Entity, EntityId
 from pyriak.events import ComponentAdded, ComponentRemoved, EntityAdded, EntityRemoved
+from pyriak.tag_component import tag_types
 
 _T = TypeVar("_T")
 
@@ -27,17 +35,19 @@ class QueryResult:
     outside of the query call expression that created it.
     """
 
-    __slots__ = "_entities", "_types", "_merge"
+    __slots__ = "_entities", "_types", "_tags", "_merge"
 
     def __init__(
         self,
         _entities: dict[EntityId, Entity],
         _types: tuple[type, ...],
+        _tags: tuple[Hashable, ...],
         _merge: Callable[..., set],
         /,
     ) -> None:
         self._entities = _entities
         self._types = _types
+        self._tags = _tags
         self._merge = _merge
 
     @property
@@ -54,6 +64,11 @@ class QueryResult:
     def types(self) -> tuple[type, ...]:
         """The component types passed to the query call, in order."""
         return self._types
+
+    @property
+    def tags(self) -> tuple[Hashable, ...]:
+        """The tags passed to the query call, in order."""
+        return self._tags
 
     @property
     def merge(self) -> Callable[..., set]:
@@ -236,7 +251,14 @@ class EntityManager:
             This is usually assigned the space's event queue.
     """
 
-    __slots__ = "_entities", "_type_cache", "components", "event_queue", "__weakref__"
+    __slots__ = (
+        "_entities",
+        "_type_cache",
+        "_tag_cache",
+        "components",
+        "event_queue",
+        "__weakref__",
+    )
 
     def __init__(
         self, entities: Iterable[Entity] = (), /, event_queue: EventQueue | None = None
@@ -256,6 +278,7 @@ class EntityManager:
         self.components = _Components(self)
         self._entities: dict[EntityId, Entity] = {}
         self._type_cache: dict[type, set[EntityId]] = {}
+        self._tag_cache: dict[Hashable, set[EntityId]] = {}
         self.add(*entities)
 
     def add(self, *entities: Entity) -> None:
@@ -373,53 +396,109 @@ class EntityManager:
             if entity.id in self_entities:
                 self.remove(entity)
 
+    @overload
     def query(
         self, /, *component_types: type, merge: Callable[..., set] = set.intersection
+    ) -> QueryResult: ...
+    @overload
+    def query(
+        self,
+        /,
+        *component_types: type,
+        tag: Hashable,
+        merge: Callable[..., set] = set.intersection,
+    ) -> QueryResult: ...
+    @overload
+    def query(
+        self,
+        /,
+        *component_types: type,
+        tags: Iterable[Hashable],
+        merge: Callable[..., set] = set.intersection,
+    ) -> QueryResult: ...
+    def query(
+        self,
+        /,
+        *component_types: type,
+        tag: Hashable | _Sentinel = _SENTINEL,
+        tags: Iterable[Hashable] | _Sentinel = _SENTINEL,
+        merge: Callable[..., set] = set.intersection,
     ) -> QueryResult:
         """Request specific data from the manager.
 
-        Given an arbitrary non-zero number of types, return bulk data about
-        the set of entities corresponding to these types, as a QueryResult.
+        Given an arbitary number of types and tags, return bulk data about
+        the set of entities corresponding to these types and tags, as a QueryResult.
+        The entities are in an arbitrary order.
 
-        Each component type has a set of entities/ids that have it.
-        The merge function combines these sets to create the final set of
-        entities/ids that are used.
+        Each component type and each tag has a set of ids of entities that have it.
+        The merge function combines these sets to create the final set of entity ids,
+        with the sets of the tags passed in first and then the types sets.
 
         By default, the merge function is set.intersection, which means the
-        result is the entities that have all of the component types.
+        result is the set of entities that have every component type and tag.
+
+        At least one type or tag must be given.
+        The tag kwarg is a shortcut for passing a single tag, and it
+        cannot be used with the tags kwarg.
 
         The merge function must take a number of sets as arguments, where the
-        number is how many component types are passed in, and return a set.
+        number is how many component types and tags are passed in, and return a set.
         Preferably, the merge function can take an arbitrary non-zero number of sets.
-        The most common merge functions are unbound set methods.
+        Typically, merge functions are unbound set methods.
 
         Args:
-            *component_types: The types that are used to generate the set of entities.
+            *component_types: Types that are used to generate the set of entities.
+            tag: A tag that is used to generate the set of entities. Defaults to no tag.
+            tags: An iterable of tags that are used to generate the set of entities.
+                Defaults to no tags.
             merge: The set merge function used to combine the sets of ids into one.
 
         Returns:
-            A readonly QueryResult object that contains the data and info of the query.
+            A read-only QueryResult object that contains the data and info of the query.
 
         Raises:
             TypeError: If exactly zero component types were given.
+
+        Example:
+            for sprite, position in space.entities.query(Sprite, Position).zip():
+                render(sprite, position)
         """
-        if not component_types:
-            raise TypeError("expected at least one component type")
-        self_entities = self._entities
         type_cache = self._type_cache
+        types_ids = [
+            type_cache[typ] if typ in type_cache else set()  # noqa: SIM401
+            for typ in component_types
+        ]
+        if tag is not _SENTINEL:
+            if tags is not _SENTINEL:
+                raise TypeError("query() cannot be passed both 'tag' and 'tags' kwargs")
+            tags = (tag,)
+            tag_cache = self._tag_cache
+            entity_ids = merge(
+                (tag_cache[tag] if tag in tag_cache else set()),  # noqa: SIM401
+                *types_ids,
+            )
+        elif tags is not _SENTINEL:
+            tags = tuple(tags)
+            if not tags and not component_types:
+                raise TypeError("expected at least one component type or tag")
+            tag_cache = self._tag_cache
+            entity_ids = merge(
+                *[
+                    tag_cache[tag] if tag in tag_cache else set()  # noqa: SIM401
+                    for tag in tags
+                ],
+                *types_ids,
+            )
+        else:
+            if not types_ids:
+                raise TypeError("expected at least one component type or tag")
+            tags = ()
+            entity_ids = merge(*types_ids)
+        entities = self._entities
         return QueryResult(
-            {
-                entity_id: self_entities[entity_id]
-                for entity_id in merge(
-                    *[
-                        type_cache[typ]  # noqa: SIM401
-                        if typ in type_cache
-                        else set()
-                        for typ in component_types
-                    ]
-                )
-            },
+            {entity_id: entities[entity_id] for entity_id in entity_ids},
             component_types,
+            tags,
             merge,
         )
 
@@ -447,6 +526,59 @@ class EntityManager:
             entities[entity_id]
             for entity_id in self._type_cache.get(component_type, ())
         )
+
+    @overload
+    def ids(self, /) -> KeysView[EntityId]: ...
+    @overload
+    def ids(self, component_type: type, /) -> set[EntityId]: ...
+    def ids(self, component_type: type | None = None, /) -> AbstractSet[EntityId]:
+        """Return a set of all entity ids that contain the given component type.
+
+        If no component type is given or is None, then return a readonly set-like
+        view of all entity ids in self instead (keys view).
+
+        Args:
+            component_type: The type that entities must have. Defaults to None.
+
+        Returns:
+            Either a set-like keys view of ids or a set of ids.
+        """
+        if component_type is None:
+            return self._entities.keys()
+        return set(self._type_cache.get(component_type, ()))
+
+    def tagged(self, tag: Hashable, /) -> Iterator[Entity]:
+        """Return an iterator of all entities with the given tag in the manager.
+
+        For each entity that has the tag, it is yielded.
+        The order of entities is not defined. The iterator may be empty.
+
+        Since it is an iterator, there are some limitations with it:
+        - Raises KeyError if one of the entities is no longer
+          in the manager when it is reached in iteration.
+        - Raises RuntimeError if the number of entities with
+          the tag changes during iteration.
+        If necessary, these can be avoided by converting to tuple.
+
+        Args:
+            tag: The tag to find entities with.
+
+        Returns:
+            An iterator of entities that have the tag.
+        """
+        entities = self._entities
+        return (entities[entity_id] for entity_id in self._tag_cache.get(tag, ()))
+
+    def tagged_ids(self, tag: Hashable, /) -> set[EntityId]:
+        """Return a set of all entity ids that have the given tag.
+
+        Args:
+            tag: The tag component that entities must have.
+
+        Returns:
+            A new set of ids of entities that contain the given tag.
+        """
+        return set(self._tag_cache.get(tag, ()))
 
     def __getitem__(self, entity_id: EntityId, /) -> Entity:
         return self._entities[entity_id]
@@ -478,26 +610,6 @@ class EntityManager:
             return default
         self.remove(entity)
         return entity
-
-    @overload
-    def ids(self, /) -> KeysView[EntityId]: ...
-    @overload
-    def ids(self, component_type: type, /) -> set[EntityId]: ...
-    def ids(self, component_type: type | None = None, /) -> AbstractSet[EntityId]:
-        """Return a set of all entity ids that contain the given component type.
-
-        If no component type is given or is None, then return a readonly set-like
-        view of all entity ids in self instead (keys view).
-
-        Args:
-            component_type: The type that entities must have. Defaults to None.
-
-        Returns:
-            Either a set-like keys view of ids or a set of ids.
-        """
-        if component_type is None:
-            return self._entities.keys()
-        return set(self._type_cache.get(component_type, ()))
 
     def __iter__(self) -> Iterator[Entity]:
         return iter(self._entities.values())
@@ -533,15 +645,25 @@ class EntityManager:
             self._type_cache[type(component)].add(entity.id)
         except KeyError:
             self._type_cache[type(component)] = {entity.id}
+        if type(component) in tag_types:
+            try:
+                self._tag_cache[component].add(entity.id)
+            except KeyError:
+                self._tag_cache[component] = {entity.id}
         event_queue = self.event_queue
         if event_queue is not None:
             event_queue.append(ComponentAdded(entity, component))
 
     def _component_removed(self, entity: Entity, component: object, /) -> None:
-        entity_ids = self._type_cache[type(component)]
-        entity_ids.remove(entity.id)
-        if not entity_ids:
+        type_ids = self._type_cache[type(component)]
+        type_ids.remove(entity.id)
+        if not type_ids:
             del self._type_cache[type(component)]
+        if type(component) in tag_types:
+            tag_ids = self._tag_cache[component]
+            tag_ids.remove(entity.id)
+            if not tag_ids:
+                del self._tag_cache[component]
         event_queue = self.event_queue
         if event_queue is not None:
             event_queue.append(ComponentRemoved(entity, component))
