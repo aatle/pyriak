@@ -3,6 +3,7 @@
 __all__ = ["SystemManager"]
 
 from collections.abc import Hashable, Iterable, Iterator
+from functools import cmp_to_key
 from inspect import getattr_static
 from reprlib import recursive_repr
 from types import ModuleType
@@ -343,41 +344,31 @@ class SystemManager:
                 lo = mid + 1
         lst.insert(lo, handler)
 
-    class _SortKey:
-        __slots__ = "handler", "systems"
-
-        def __init__(
-            self, handler: _EventHandler[Any], systems: Iterable[System], /
-        ) -> None:
-            self.handler = handler
-            self.systems = systems
-
-        def __lt__(self, other: "SystemManager._SortKey", /) -> bool:
-            handler = self.handler
-            other_handler = other.handler
-            other_priority = other_handler.priority
-            handler_priority = handler.priority
-            if not (other_priority == handler_priority):
-                return other_priority < handler_priority  # type: ignore[no-any-return]
-            system = handler.system
-            other_system = other_handler.system
-            if system != other_system:
-                for s in self.systems:
-                    if s == system:
-                        return True
-                    if s == other_system:
-                        return False
-                raise ValueError
-            name = handler.name
-            other_name = other_handler.name
-            if type(system) is not ModuleType:
-                return name < other_name
-            for n in system.__dict__:
-                if other_name == n:
-                    return False
-                if name == n:
-                    return True
+    def _handler_cmp(  # noqa: PLR0911
+        self, handler1: _EventHandler[Any], handler2: _EventHandler[Any], /
+    ) -> int:
+        priority1, priority2 = handler1.priority, handler2.priority
+        if priority1 != priority2:
+            return -1 if priority2 < priority1 else 1
+        system1, system2 = handler1.system, handler2.system
+        if system1 != system2:
+            for system in self._systems:
+                if system == system1:
+                    return -1
+                if system == system2:
+                    return 1
             raise ValueError
+        name1, name2 = handler1.name, handler2.name
+        if name1 == name2:
+            return 0
+        if type(system1) is not ModuleType:
+            return -1 if name1 < name2 else 1
+        for name in system1.__dict__:
+            if name == name1:
+                return -1
+            if name == name2:
+                return 1
+        raise ValueError
 
     def _sort_handlers(
         self, handlers: Iterable[_EventHandler[_T]], /
@@ -386,10 +377,13 @@ class SystemManager:
 
         Duplicate handlers are removed before sorting.
 
+        This method merely emulates the behavior of _bind().
+        Event handlers are typically inserted one at a time into the correct position.
+
         Sorts by, in order:
         - highest priority
         - least recently added system
-        - (same system) order the handlers were added in
+        - (same system) order the handlers were added in:
             - if system is module instance, then order created
             - otherwise, alphabetical names
 
@@ -399,10 +393,8 @@ class SystemManager:
         Returns:
             A new list of sorted handlers from the original handlers.
         """
-        sort_key_type = self._SortKey
-        systems = self._systems
         # Uses dict to remove duplicates while preserving some order
-        return sorted(dict.fromkeys(handlers), key=lambda h: sort_key_type(h, systems))
+        return sorted(dict.fromkeys(handlers), key=cmp_to_key(self._handler_cmp))
 
     def _get_handlers(self, event: _T, /) -> list[_EventHandler[_T]]:
         event_type = type(event)
