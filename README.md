@@ -16,8 +16,10 @@ pip install pyriak
 
 ## Introduction to ECS
 ECS (entity component system) architecture is an alternative paradigm to OOP (object-oriented programming),
-emphasizing composition and data-oriented design over traditional OOP concepts.
+emphasizing composition and usually data-oriented design over traditional OOP concepts.
 This can help with structuring complex programs, especially in game development.
+
+For a more detailed introduction, there is good information at https://github.com/SanderMertens/ecs-faq.
 
 ### Objects
 These are the three standard parts of most ECS designs:\
@@ -181,12 +183,12 @@ def _added_(space: Space) -> None:
     player = space.entities.create(Position(0.0, 0.0), Health(100), Player())
 ```
 Systems operate on their specific components in bulk.\
-To access batches of components, use the `space.query(*component_types)` method, which takes any number of component types as arguments.\
+To access batches of components, use the `space.entities.query(*component_types)` method, which takes any number of component types as arguments.\
 This will select all entities in the space that contain every component type passed in, and return an query result object.\
 This object has methods such as `.zip()`, which gives an iterator of the tuple of components for each entity.
 E.g.,
 ```py
-list(space.query(Spam, Eggs, Foo).zip()) --> [  # for every entity with all three components
+list(space.entities.query(Spam, Eggs, Foo).zip()) --> [  # for every entity with all three components
     (Spam(5), Eggs("a"), Foo()),  # components from first entity
     (Spam(1), Eggs("b"), Foo()),  # components from second entity
     ...
@@ -199,7 +201,7 @@ Used in an event handler, it would look something like this:
 
 @bind(events.UpdateGame, 500)
 def update_physics(space: Space, event: events.UpdateGame) -> None:
-    for position, velocity in space.query(
+    for position, velocity in space.entities.query(
         components.Position, components.Velocity
     ).zip():
         position.x += velocity.x * event.dt
