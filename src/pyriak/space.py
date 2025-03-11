@@ -3,10 +3,9 @@
 __all__ = ["Space"]
 
 from collections import deque
-from collections.abc import Callable
 
 from pyriak import EventQueue
-from pyriak.entity_manager import EntityManager, QueryResult
+from pyriak.entity_manager import EntityManager
 from pyriak.state_manager import StateManager
 from pyriak.system_manager import SystemManager
 
@@ -73,30 +72,6 @@ class Space:
             states = StateManager()
         self.states = states
         states.event_queue = event_queue
-
-    def query(
-        self, /, *component_types: type, merge: Callable[..., set] = set.intersection
-    ) -> QueryResult:
-        """Get bulk entity and component data from self's entities.
-
-        Syntactic sugar for self.entities.query().
-        For more details and specifics, see documentation of EntityManager.query().
-
-        Args:
-            *component_types: The types that are used to generate the set of entities.
-            merge: The set merge function used to combine the sets of ids into one.
-
-        Returns:
-            A readonly QueryResult object that contains the data and info of the query.
-
-        Raises:
-            TypeError: If exactly zero component types were given.
-
-        Example:
-            for sprite, position in space.query(Sprite, Position).zip():
-                render(sprite, position)
-        """
-        return self.entities.query(*component_types, merge=merge)
 
     def process(self, event: object, /) -> bool:
         """Immediately invoke event handlers for an event.
