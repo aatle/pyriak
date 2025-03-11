@@ -80,7 +80,7 @@ class StateManager:
             state_type = type(state)
             if state_type in self_states:
                 raise ValueError(
-                    f"state manager already has state of type {state_type}"
+                    f"state manager already has state of type {state_type!r}"
                 )
             self_states[state_type] = state
             if event_queue is not None:

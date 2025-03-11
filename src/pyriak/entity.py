@@ -66,7 +66,7 @@ class Entity:
         for component in components:
             if type(component) in component_dict:
                 raise ValueError(
-                    f"entity already has component of type {type(component)}"
+                    f"entity already has component of type {type(component)!r}"
                 )
             component_dict[type(component)] = component
         self._components: dict[type, object] = component_dict
@@ -95,7 +95,7 @@ class Entity:
             component_type = type(component)
             if component_type in self_components:
                 raise ValueError(
-                    f"entity already has component of type {component_type}"
+                    f"entity already has component of type {component_type!r}"
                 )
             self_components[component_type] = component
             if manager is not None:

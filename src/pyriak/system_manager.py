@@ -184,7 +184,7 @@ class SystemManager:
         bind = self._bind
         for system in systems:
             if system in self_systems:
-                raise ValueError(f"system manager already has system {system}")
+                raise ValueError(f"system manager already has system {system!r}")
             self_systems[system] = None
             events = bind(system)
             space = self.space
