@@ -61,15 +61,15 @@ class Entity:
         """
         self.id: EntityId = self.new_id()
         self._manager: weakref[EntityManager] = dead_weakref
-        comp_dict: dict[type, object] = {}
-        for comp in components:
-            comp_type = type(comp)
-            if comp_type in comp_dict and (
-                (other := comp_dict[comp_type]) is comp or other == comp
-            ):
-                continue
-            comp_dict[comp_type] = comp
-        self._components: dict[type, object] = comp_dict
+        # Skip add() for performance
+        component_dict: dict[type, object] = {}
+        for component in components:
+            if type(component) in component_dict:
+                raise ValueError(
+                    f"entity already has component of type {type(component)}"
+                )
+            component_dict[type(component)] = component
+        self._components: dict[type, object] = component_dict
 
     def add(self, *components: object) -> None:
         """Add an arbitrary number of components to self.
