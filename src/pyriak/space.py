@@ -96,13 +96,13 @@ class Space:
         """
         return self.systems.process(event)
 
-    def post(self, *events: object) -> None:
-        """Append an event or events to the end of self's event queue.
+    def post(self, event: object, /) -> None:
+        """Append an event to the end of self's event queue.
 
         Args:
-            *events: The events to be posted to the event queue.
+            event: The event to be posted to the event queue.
         """
-        self.event_queue.extend(events)
+        self.event_queue.append(event)
 
     def pump(self, events: int | None = None, /) -> int:
         """Pop and process events from self's event queue.
