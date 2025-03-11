@@ -118,7 +118,7 @@ class Space:
 
         The return value is the actual number of events processed, which is
         less than or equal to the number passed in.
-        It is 0 if and only if the event queue was already empty when pump()
+        It is 0 if the event queue was already empty when pump()
         was called and there are no more events left to process.
 
         Args:
@@ -127,17 +127,10 @@ class Space:
         Returns:
             The number of events actually popped from the event queue and processed.
         """
-        process_event = self.process
         queue = self.event_queue
         pop = queue.popleft if isinstance(queue, deque) else lambda: queue.pop(0)
-        i = -1
-        if events is None:
-            while queue:
-                i += 1
-                process_event(pop())
-        else:
-            for i in range(events):
-                if not queue:
-                    return i
-                process_event(pop())
-        return i + 1
+        i = 0
+        while queue and (events is None or i < events):
+            self.process(pop())
+            i += 1
+        return i
