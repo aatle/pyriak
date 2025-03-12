@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "pyriak"
 version = "0.4.2"
-description = "A lightweight implementation of Entity Component System architecture"
+description = "An implementation of Entity Component System architecture"
 authors = ["aatle <168398276+aatle@users.noreply.github.com>"]
 license = "MIT"
 readme = "README.md"

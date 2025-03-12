@@ -5,7 +5,7 @@
 [![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](https://github.com/python/mypy)
 [![Linting: Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
-Pyriak is a lightweight Python implementation of Entity Component System (ECS) architecture.
+Pyriak is a Python implementation of Entity Component System (ECS) architecture.
 
 
 ## Installation
