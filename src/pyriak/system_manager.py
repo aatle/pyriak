@@ -2,11 +2,12 @@
 
 __all__ = ["SystemManager"]
 
+from bisect import insort_right
 from collections.abc import Hashable, Iterable, Iterator
 from functools import cmp_to_key
 from inspect import getattr_static
 from reprlib import recursive_repr
-from types import ModuleType
+from types import ModuleType, NotImplementedType
 from typing import TYPE_CHECKING, Any, Generic, NamedTuple, TypeVar
 from weakref import ref as weakref
 
@@ -47,6 +48,10 @@ class _EventHandler(NamedTuple, Generic[_T]):
     It is implemented as a NamedTuple, with equality and hash based on only
     name and system.
 
+    It also supports comparison based on priority, where if h1 < h2, then h1
+    has higher priority.
+    Priority comparisons involving equality such as >= are not implemented.
+
     Attributes:
         system: The system the event handler belongs to.
         callback: The event handler callback to be invoked.
@@ -71,6 +76,24 @@ class _EventHandler(NamedTuple, Generic[_T]):
 
     def __hash__(self) -> int:
         return hash((self.name, self.system))
+
+    def __lt__(self, other: object) -> bool:
+        if isinstance(other, _EventHandler):
+            result: bool = other.priority < self.priority
+            return result
+        return NotImplemented
+
+    def __gt__(self, other: object) -> bool:
+        if isinstance(other, _EventHandler):
+            result: bool = self.priority < other.priority
+            return result
+        return NotImplemented
+
+    def __le__(self, other: object) -> NotImplementedType:
+        return NotImplemented
+
+    def __ge__(self, other: object) -> NotImplementedType:
+        return NotImplemented
 
 
 del NamedTuple
@@ -321,35 +344,13 @@ class SystemManager:
     def space(self, value: "Space | None") -> None:
         self._space = dead_weakref if value is None else weakref(value)
 
-    @staticmethod
-    def _insert_handler(
-        lst: list[_EventHandler[_T]], handler: _EventHandler[_T], /
-    ) -> None:
-        """Insert a handler into a list of other handlers.
-
-        Sorts by: highest priority, then oldest in manager.
-
-        Args:
-            lst: The list of handlers to add the handlers to.
-            handler: The handler to be inserted into the list.
-        """
-        priority = handler.priority
-        lo = 0
-        hi = len(lst)
-        while lo < hi:
-            mid = (lo + hi) // 2
-            if lst[mid].priority < priority:
-                hi = mid
-            else:
-                lo = mid + 1
-        lst.insert(lo, handler)
-
     def _handler_cmp(  # noqa: PLR0911
         self, handler1: _EventHandler[Any], handler2: _EventHandler[Any], /
     ) -> int:
-        priority1, priority2 = handler1.priority, handler2.priority
-        if priority1 != priority2:
-            return -1 if priority2 < priority1 else 1
+        if handler1 < handler2:
+            return -1
+        if handler2 < handler1:
+            return 1
         system1, system2 = handler1.system, handler2.system
         if system1 != system2:
             for system in self._systems:
@@ -450,8 +451,10 @@ class SystemManager:
     def _bind(self, system: System, /) -> list[EventHandlerAdded]:
         """Create handlers to process events for a system's bindings.
 
-        Handlers of one event type are sorted by highest priority,
-        then oldest system, then first one created in manager.
+        Handlers of one event type are sorted by highest priority.
+        For handlers with the same priority, new handlers are inserted after
+        older handlers. This means that equal priority handlers are effectively
+        sorted by oldest system, else by order they were returned by _get_bindings().
 
         Args:
             system: The system that was added, and to create handlers from.
@@ -461,7 +464,6 @@ class SystemManager:
         """
         all_handlers = self._handlers
         all_key_handlers = self._key_handlers
-        insert_handler = self._insert_handler
         events: list[EventHandlerAdded] = []
         for binding, handler in self._get_bindings(system):
             event_type = binding._event_type_
@@ -475,17 +477,17 @@ class SystemManager:
                     all_handlers[event_type] = []
                     all_key_handlers[event_type] = {key: [handler] for key in keys}
             elif not keys:
-                insert_handler(all_handlers[event_type], handler)
+                insort_right(all_handlers[event_type], handler)
                 if event_type in all_key_handlers:
                     for handlers in all_key_handlers[event_type].values():
-                        insert_handler(handlers, handler)
+                        insort_right(handlers, handler)
             else:
                 handlers = all_handlers[event_type]
                 key_handlers = all_key_handlers[event_type]
                 for key in keys:
                     if key not in key_handlers:
                         key_handlers[key] = handlers[:]
-                    insert_handler(key_handlers[key], handler)
+                    insort_right(key_handlers[key], handler)
             events.append(EventHandlerAdded(binding, handler))
         return events
 
