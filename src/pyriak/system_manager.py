@@ -5,7 +5,6 @@ __all__ = ["SystemManager"]
 from bisect import insort_right
 from collections.abc import Hashable, Iterable, Iterator
 from functools import cmp_to_key
-from inspect import getattr_static
 from reprlib import recursive_repr
 from types import ModuleType, NotImplementedType
 from typing import TYPE_CHECKING, Any, Generic, NamedTuple, TypeVar
@@ -426,15 +425,16 @@ class SystemManager:
         names: dict[str, None] = dict.fromkeys(type(system).__dir__(system))
         results: list[tuple[Binding, _EventHandler[object]]] = []
         for name in names:
-            try:
-                binding = getattr_static(system, name)
-                if not isinstance(binding, Binding):
-                    continue
-                callback = getattr(system, name)
-            except AttributeError:
-                continue
-            if callback is binding:
+            value = getattr(system, name)
+            if isinstance(value, Binding):
+                binding = value
                 callback = binding._callback_
+            else:
+                value_static = type(system).__dict__.get(name)
+                if not isinstance(value_static, Binding):
+                    continue
+                binding = value_static
+                callback = value
             results.append(
                 (binding, _EventHandler(system, callback, name, binding._priority_))
             )
