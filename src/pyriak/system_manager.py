@@ -422,31 +422,23 @@ class SystemManager:
         return (key_handlers.get(keys.pop(), handlers) if keys else handlers)[:]
 
     @staticmethod
-    def _get_bindings(system: System) -> list[tuple[Binding, _EventHandler[Any]]]:
-        if type(system) is ModuleType:
-            return [
-                (
-                    binding,
-                    _EventHandler(system, binding._callback_, name, binding._priority_),
-                )
-                for name, binding in system.__dict__.items()
-                if isinstance(binding, Binding)
-            ]
-        return [
-            (
-                binding,
-                _EventHandler(
-                    system,
-                    c
-                    if (c := getattr(system, name)) is not binding
-                    else binding._callback_,
-                    name,
-                    binding._priority_,
-                ),
+    def _get_bindings(system: System) -> list[tuple[Binding, _EventHandler[object]]]:
+        names: dict[str, None] = dict.fromkeys(type(system).__dir__(system))
+        results: list[tuple[Binding, _EventHandler[object]]] = []
+        for name in names:
+            try:
+                binding = getattr_static(system, name)
+                if not isinstance(binding, Binding):
+                    continue
+                callback = getattr(system, name)
+            except AttributeError:
+                continue
+            if callback is binding:
+                callback = binding._callback_
+            results.append(
+                (binding, _EventHandler(system, callback, name, binding._priority_))
             )
-            for name in dict.fromkeys(dir(system))  # remove duplicates
-            if isinstance(binding := getattr_static(system, name), Binding)
-        ]
+        return results
 
     def _bind(self, system: System, /) -> list[EventHandlerAdded]:
         """Create handlers to process events for a system's bindings.
