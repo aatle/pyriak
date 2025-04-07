@@ -39,12 +39,12 @@ Additionally, there are helper container classes to manage these objects.\
 #### pyriak implementations
 The following are how the above terms are implemented in pyriak.
 - entity: `Entity` class, containing a unique entity ID and a set of components referenced by class
-- system: usually a module object with event handlers and functions defined on it, static and holds no data
+- system: a module object with event handlers and functions defined on it, static and holds no data
 - component, event, state: user-defined classes containing mostly data and little behavior
   - akin to a struct in other languages. The `dataclasses` module and other similar utilities are useful for defining these
 - managers:
   - `EntityManager`: a set of entities referenced by their ID, with querying operations available
-  - `SystemManager`: a set of hashable system objects, can process events by invoking the relevant event handlers
+  - `SystemManager`: a set of system objects, can process events by invoking the relevant event handlers
   - `StateManager`: a set of states referenced by their class, akin to an entity
 - space: `Space` class, with attributes `.entities`, `.systems`, and `.states` for the managers, and `.event_queue`
 - event queue: a `collections.deque` by default, attached to the space

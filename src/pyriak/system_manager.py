@@ -6,7 +6,7 @@ from bisect import insort_right
 from collections.abc import Hashable, Iterable, Iterator
 from functools import cmp_to_key
 from reprlib import recursive_repr
-from types import ModuleType, NotImplementedType
+from types import NotImplementedType
 from typing import TYPE_CHECKING, Any, Generic, NamedTuple, TypeVar
 from weakref import ref as weakref
 
@@ -30,16 +30,10 @@ _T = TypeVar("_T")
 class _EventHandler(NamedTuple, Generic[_T]):
     """Internal object that holds info for a single SystemManager event handler.
 
-    A function on a system can be bound to event types.
+    A function on a system can be bound to an event type.
     This creates a 'binding' on the system.
-    There may be multiple event handlers per binding, each bound to
-    different event types and having separate priority and keys.
-    The function becomes the event handler callback for each of those handlers.
-    Most commonly, a binding only has one event handler.
     Conceptually, an event handler consists of its event type, keys, priority,
     callback, system, and name, and is in a manager listening for events.
-    The system, name, and callback are all shared
-    in a single binding.
     However, this internal object only stores some of that data,
     as other data is implied by its location in data structures.
 
@@ -54,7 +48,7 @@ class _EventHandler(NamedTuple, Generic[_T]):
     Attributes:
         system: The system the event handler belongs to.
         callback: The event handler callback to be invoked.
-        name: The attribute name of the binding on the system.
+        name: The function variable name of the binding on the system.
         priority: The priority of the event handler given in bind().
     """
 
@@ -106,8 +100,8 @@ class SystemManager:
     Event processing and other system callbacks require a reference to the space,
     so the SystemManager holds a weak reference to one.
 
-    A system is any hashable object, but it must have certain things to make it
-    useful. Defining _added_ and _removed_ functions or attributes on the system
+    A system is a module object, typically with event handler bindings on it.
+    Defining _added_ and _removed_ functions or attributes on the system
     executes code when a system is added or removed.
     Use bind() to create event handlers that listen for certain event types.
 
@@ -361,8 +355,6 @@ class SystemManager:
         name1, name2 = handler1.name, handler2.name
         if name1 == name2:
             return 0
-        if type(system1) is not ModuleType:
-            return -1 if name1 < name2 else 1
         for name in system1.__dict__:
             if name == name1:
                 return -1
@@ -383,9 +375,7 @@ class SystemManager:
         Sorts by, in order:
         - highest priority
         - least recently added system
-        - (same system) order the handlers were added in:
-            - if system is module instance, then order created
-            - otherwise, alphabetical names
+        - (same system) order the handlers were added in (order defined in module)
 
         Args:
             handlers: The iterable of event handlers to be sorted.
@@ -422,23 +412,14 @@ class SystemManager:
 
     @staticmethod
     def _get_bindings(system: System) -> list[tuple[Binding, _EventHandler[object]]]:
-        names: dict[str, None] = dict.fromkeys(type(system).__dir__(system))
-        results: list[tuple[Binding, _EventHandler[object]]] = []
-        for name in names:
-            value = getattr(system, name)
-            if isinstance(value, Binding):
-                binding = value
-                callback = binding._callback_
-            else:
-                value_static = type(system).__dict__.get(name)
-                if not isinstance(value_static, Binding):
-                    continue
-                binding = value_static
-                callback = value
-            results.append(
-                (binding, _EventHandler(system, callback, name, binding._priority_))
+        return [
+            (
+                binding,
+                _EventHandler(system, binding._callback_, name, binding._priority_),
             )
-        return results
+            for name, binding in system.__dict__.items()
+            if isinstance(binding, Binding)
+        ]
 
     def _bind(self, system: System, /) -> list[EventHandlerAdded]:
         """Create handlers to process events for a system's bindings.

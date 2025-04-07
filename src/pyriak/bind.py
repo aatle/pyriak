@@ -34,14 +34,11 @@ class Binding(Generic[_T, _R_co]):
     """A Binding wraps the event handler callback with handler info.
 
     bind() returns a Binding. When a system is added to a SystemManager,
-    it searches the system for attributes of type Binding.
-    An event handler is then created for each binding on the system.
+    it searches the system for variables of type Binding.
+    An event handler is then created for each binding on the system,
+    in the same order that the bindings were defined in the module.
 
     Binding forwards calls to the internal callback.
-    Binding supports descriptor access by redirecting it to the internal
-    callback. This is to allow instance methods to be properly invoked as a
-    bound method (for the self argument), if the callback was a function
-    in a class.
 
     Attributes:
         _callback_: The event handler callback wrapped by the Binding.
@@ -71,18 +68,6 @@ class Binding(Generic[_T, _R_co]):
 
     def __call__(self, space: "Space", event: _T, /) -> _R_co:
         return self._callback_(space, event)
-
-    def __get__(
-        self, obj: object | None, objtype: type | None = None
-    ) -> _Callback[_T, _R_co]:
-        callback = self._callback_
-        try:
-            descr_get: Callable[
-                [_Callback[_T, _R_co], object | None, type | None], _Callback[_T, _R_co]
-            ] = type(callback).__get__  # type: ignore[attr-defined]
-        except AttributeError:
-            return callback
-        return descr_get(callback, obj, objtype)
 
     def __repr__(self) -> str:
         args = (
@@ -114,7 +99,7 @@ def bind(
 ) -> Callable[[_Callback[_T, _R_co]], Binding[_T, _R_co]]:
     """Bind a callback to an event type.
 
-    To use, define a function that takes two arguments, space and event.
+    To use, define a module-level function that takes two arguments, space and event.
     Then, decorate it with a call to bind(), passing in the necessary info.
 
     This creates a binding. When the system is added to the space's SystemManager,
@@ -130,14 +115,11 @@ def bind(
     if the binding has any keys.
     This is only valid for event types with key functions.
 
-    bind() should only be used on attributes directly on the system.
     bind() cannot be used multiple times on the same object.
 
     bind() works on any callable, but the signature should be correct.
     It can be manually invoked with two calls instead of using as a decorator,
     if necessary.
-    The most common place where bind() is used is on a module top-level function,
-    where the module object is the system.
 
     Args:
         event_type: The type of events that the handler will be triggered by.
