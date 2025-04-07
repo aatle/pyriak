@@ -4,7 +4,6 @@ __all__ = ["SystemManager"]
 
 from bisect import insort_right
 from collections.abc import Hashable, Iterable, Iterator
-from functools import cmp_to_key
 from reprlib import recursive_repr
 from types import NotImplementedType
 from typing import TYPE_CHECKING, Any, Generic, NamedTuple, TypeVar
@@ -149,7 +148,15 @@ class SystemManager:
 
         Event handlers listen for events of a specific type.
         Optionally, they can require event keys.
-        Each event handler callback is called in order of priority.
+        Each event handler callback is called in order of priority
+        within its event key (or no key).
+
+        If the event has key(s), the key handlers for each key are invoked, one key
+        at a time, and then the general handlers are invoked.
+
+        A single event handler may be invoked multiple times if there are multiple
+        event keys and either the event handler is bound to multiple keys
+        or the event keys contain duplicates.
 
         The SystemManager's space attribute must not be None.
 
@@ -337,55 +344,6 @@ class SystemManager:
     def space(self, value: "Space | None") -> None:
         self._space = dead_weakref if value is None else weakref(value)
 
-    def _handler_cmp(  # noqa: PLR0911
-        self, handler1: _EventHandler[Any], handler2: _EventHandler[Any], /
-    ) -> int:
-        if handler1 < handler2:
-            return -1
-        if handler2 < handler1:
-            return 1
-        system1, system2 = handler1.system, handler2.system
-        if system1 != system2:
-            for system in self._systems:
-                if system == system1:
-                    return -1
-                if system == system2:
-                    return 1
-            raise ValueError
-        name1, name2 = handler1.name, handler2.name
-        if name1 == name2:
-            return 0
-        for name in system1.__dict__:
-            if name == name1:
-                return -1
-            if name == name2:
-                return 1
-        raise ValueError
-
-    def _sort_handlers(
-        self, handlers: Iterable[_EventHandler[_T]], /
-    ) -> list[_EventHandler[_T]]:
-        """Sort and return an iterable of handlers.
-
-        Duplicate handlers are removed before sorting.
-
-        This method merely emulates the behavior of _bind().
-        Event handlers are typically inserted one at a time into the correct position.
-
-        Sorts by, in order:
-        - highest priority
-        - least recently added system
-        - (same system) order the handlers were added in (order defined in module)
-
-        Args:
-            handlers: The iterable of event handlers to be sorted.
-
-        Returns:
-            A new list of sorted handlers from the original handlers.
-        """
-        # Uses dict to remove duplicates while preserving some order
-        return sorted(dict.fromkeys(handlers), key=cmp_to_key(self._handler_cmp))
-
     def _get_handlers(self, event: _T, /) -> list[_EventHandler[_T]]:
         event_type = type(event)
         try:
@@ -400,15 +358,15 @@ class SystemManager:
             # A key function was added late
             self._key_handlers[event_type] = {}
             return handlers[:]
-        key = key_functions[event_type](event)
-        if not isinstance(key, Iterator):
-            return (key_handlers.get(key, handlers))[:]
-        keys = {k for k in key if k in key_handlers}
-        if len(keys) > 1:
-            return self._sort_handlers(
-                [handler for key in keys for handler in key_handlers[key]]
-            )
-        return (key_handlers.get(keys.pop(), handlers) if keys else handlers)[:]
+        keys = key_functions[event_type](event)
+        if not isinstance(keys, Iterator):
+            return [*key_handlers.get(keys, ()), *handlers]
+        return [
+            handler
+            for key in keys
+            if key in key_handlers
+            for handler in key_handlers[key]
+        ] + handlers
 
     @staticmethod
     def _get_bindings(system: System) -> list[tuple[Binding, _EventHandler[object]]]:
@@ -451,16 +409,13 @@ class SystemManager:
                     all_key_handlers[event_type] = {key: [handler] for key in keys}
             elif not keys:
                 insort_right(all_handlers[event_type], handler)
-                if event_type in all_key_handlers:
-                    for handlers in all_key_handlers[event_type].values():
-                        insort_right(handlers, handler)
             else:
-                handlers = all_handlers[event_type]
                 key_handlers = all_key_handlers[event_type]
                 for key in keys:
-                    if key not in key_handlers:
-                        key_handlers[key] = handlers[:]
-                    insort_right(key_handlers[key], handler)
+                    if key in key_handlers:
+                        insort_right(key_handlers[key], handler)
+                    else:
+                        key_handlers[key] = [handler]
             events.append(EventHandlerAdded(binding, handler))
         return events
 
@@ -468,7 +423,7 @@ class SystemManager:
         """Remove all handlers that belong to system from self.
 
         If an event type no longer has any handlers, it is removed.
-        This also applies to keys with handlers.
+        This also applies to key handlers.
 
         Args:
             system: The system that was removed, to remove handlers for.
@@ -479,36 +434,25 @@ class SystemManager:
         all_handlers = self._handlers
         all_key_handlers = self._key_handlers
         events: list[EventHandlerRemoved] = []
-        seen: dict[type, frozenset[Hashable]] = {}
         for binding, handler in self._get_bindings(system):
             event_type = binding._event_type_
             keys = binding._keys_
-            if event_type not in seen:
+            if not keys:
                 handlers = all_handlers[event_type]
-                handlers[:] = [
-                    handler for handler in handlers if handler.system != system
-                ]
+                handlers.remove(handler)
                 if not handlers:
                     if event_type not in all_key_handlers:
                         del all_handlers[event_type]
                     elif not all_key_handlers[event_type]:
-                        del all_handlers[event_type], all_key_handlers[event_type]
-                seen[event_type] = unseen_keys = keys
+                        del all_key_handlers[event_type], all_handlers[event_type]
             else:
-                unseen_keys = keys - seen[event_type]
-                seen[event_type] |= unseen_keys
-            if unseen_keys:
                 key_handlers = all_key_handlers[event_type]
-                for key in unseen_keys:
+                for key in keys:
                     handlers = key_handlers[key]
-                    handlers[:] = [
-                        handler for handler in handlers if handler.system != system
-                    ]
+                    handlers.remove(handler)
                     if not handlers:
                         del key_handlers[key]
-                if not key_handlers:
-                    del all_key_handlers[event_type]
-                    if not all_handlers[event_type]:
-                        del all_handlers[event_type]
+                if not key_handlers and not all_handlers[event_type]:
+                    del all_key_handlers[event_type], all_handlers[event_type]
             events.append(EventHandlerRemoved(binding, handler))
         return events

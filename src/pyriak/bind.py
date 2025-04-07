@@ -108,12 +108,15 @@ def bind(
     This does not include subclasses of the event type. The types must be exact.
 
     The priority determines the order in which callbacks are invoked if there
-    are multiple systems or event handlers for that event.
+    are multiple event handlers for that event.
+    This priority only applies within handlers with the same event key or no key.
 
     The optional key or keys further narrow which events are handled.
+    This is only valid for event types with key functions.
     The event must give at least one key that matches the binding,
     if the binding has any keys.
-    This is only valid for event types with key functions.
+    The handler may be invoked multiple times if multiple of the handler's keys
+    are matched, or if the event keys contain duplicates.
 
     bind() cannot be used multiple times on the same object.
 
