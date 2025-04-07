@@ -210,7 +210,7 @@ class SystemManager:
                 event_queue.extend([SystemAdded(system), *events])
             if space is not None:
                 try:
-                    added = system._added_  # type: ignore[attr-defined]
+                    added = system._added_
                 except AttributeError:
                     continue
                 added(space)
@@ -264,7 +264,7 @@ class SystemManager:
                 event_queue.extend([*events, SystemRemoved(system)])
             if space is not None:
                 try:
-                    removed = system._removed_  # type: ignore[attr-defined]
+                    removed = system._removed_
                 except AttributeError:
                     continue
                 removed(space)
