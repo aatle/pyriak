@@ -22,15 +22,14 @@ if TYPE_CHECKING:
 
 
 _T = TypeVar("_T")
-_R_co = TypeVar("_R_co", covariant=True)
 
-_Callback: TypeAlias = Callable[["Space", _T], _R_co]
+_Callback: TypeAlias = Callable[["Space", _T], object]
 
 
 _empty_frozenset: Final[frozenset[object]] = frozenset()
 
 
-class Binding(Generic[_T, _R_co]):
+class Binding(Generic[_T]):
     """A Binding wraps the event handler callback with handler info.
 
     bind() returns a Binding. When a system is added to a SystemManager,
@@ -48,11 +47,11 @@ class Binding(Generic[_T, _R_co]):
             Often empty, or only containing one key.
     """
 
-    __wrapped__: _Callback[_T, _R_co]
+    __wrapped__: _Callback[_T]
 
     def __init__(
         self,
-        callback: _Callback[_T, _R_co],
+        callback: _Callback[_T],
         event_type: type[_T],
         priority: Any,
         keys: frozenset[Hashable],
@@ -63,10 +62,10 @@ class Binding(Generic[_T, _R_co]):
         self._keys_ = keys
 
     @property
-    def _callback_(self) -> _Callback[_T, _R_co]:
+    def _callback_(self) -> _Callback[_T]:
         return self.__wrapped__
 
-    def __call__(self, space: "Space", event: _T, /) -> _R_co:
+    def __call__(self, space: "Space", event: _T, /) -> object:
         return self._callback_(space, event)
 
     def __repr__(self) -> str:
@@ -80,15 +79,15 @@ class Binding(Generic[_T, _R_co]):
 @overload
 def bind(
     event_type: type[_T], priority: Any, /
-) -> Callable[[_Callback[_T, _R_co]], Binding[_T, _R_co]]: ...
+) -> Callable[[_Callback[_T]], Binding[_T]]: ...
 @overload
 def bind(
     event_type: type[_T], priority: Any, /, *, key: Hashable
-) -> Callable[[_Callback[_T, _R_co]], Binding[_T, _R_co]]: ...
+) -> Callable[[_Callback[_T]], Binding[_T]]: ...
 @overload
 def bind(
     event_type: type[_T], priority: Any, /, *, keys: Iterable[Hashable]
-) -> Callable[[_Callback[_T, _R_co]], Binding[_T, _R_co]]: ...
+) -> Callable[[_Callback[_T]], Binding[_T]]: ...
 def bind(
     event_type: type[_T],
     priority: Any,
@@ -96,7 +95,7 @@ def bind(
     *,
     key: Hashable | _Sentinel = _SENTINEL,
     keys: Iterable[Hashable] | _Sentinel = _SENTINEL,
-) -> Callable[[_Callback[_T, _R_co]], Binding[_T, _R_co]]:
+) -> Callable[[_Callback[_T]], Binding[_T]]:
     """Bind a callback to an event type.
 
     To use, define a module-level function that takes two arguments, space and event.
@@ -163,7 +162,7 @@ def bind(
             f"bind(): keys were provided but no key function exists for {event_type!r}"
         )
 
-    def decorator(callback: _Callback[_T, _R_co], /) -> Binding[_T, _R_co]:
+    def decorator(callback: _Callback[_T], /) -> Binding[_T]:
         if isinstance(callback, Binding):
             raise TypeError("cannot bind same object multiple times")
         return Binding(callback, event_type, priority, keys)

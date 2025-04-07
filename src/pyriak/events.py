@@ -180,11 +180,11 @@ def _handler_key(event: "EventHandlerAdded | EventHandlerRemoved") -> type:
 
 @dataclass
 class _EventHandlerEvent(Generic[_T]):
-    _binding: "Binding[_T, Any]"
+    _binding: "Binding[_T]"
     _handler: "_EventHandler[_T]"
 
     @property
-    def callback(self) -> "_Callback[_T, Any]":
+    def callback(self) -> "_Callback[_T]":
         return self._handler.callback
 
     @property

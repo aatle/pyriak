@@ -51,12 +51,12 @@ class _EventHandler(NamedTuple, Generic[_T]):
         name: The function variable name of the binding on the system.
     """
 
-    callback: _Callback[_T, Any]
+    callback: _Callback[_T]
     priority: Any
     system: System
     name: str
 
-    def __call__(self, space: "Space", event: _T, /) -> Any:
+    def __call__(self, space: "Space", event: _T, /) -> object:
         return self.callback(space, event)
 
     def __eq__(self, other: object) -> bool:
