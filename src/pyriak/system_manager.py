@@ -143,7 +143,7 @@ class SystemManager:
         self._key_handlers: dict[type, dict[Hashable, list[_EventHandler[Any]]]] = {}
         self.add(*systems)
 
-    def process(self, event: object, /) -> bool:
+    def process(self, event: object, /) -> None:
         """Invoke system event handlers for an event.
 
         Event handlers listen for events of a specific type.
@@ -162,15 +162,10 @@ class SystemManager:
 
         If the event type has no event handlers, nothing happens.
 
-        If a callback returns a truthy value, the rest of the callbacks
-        are skipped and True is returned.
-        If no callback returns a truthy value, False is returned.
+        The return value of the callback is ignored.
 
         Args:
             event: The event to process.
-
-        Returns:
-            True if event processing was stopped by a callback, False otherwise.
 
         Raises:
             RuntimeError: If self's space is None or deleted.
@@ -179,9 +174,7 @@ class SystemManager:
         if space is None:
             raise RuntimeError("cannot process event, space is None or deleted")
         for handler in self._get_handlers(event):
-            if handler.callback(space, event):
-                return True
-        return False
+            handler.callback(space, event)
 
     def add(self, *systems: System) -> None:
         """Add an arbitrary number of systems and their event handlers to self.

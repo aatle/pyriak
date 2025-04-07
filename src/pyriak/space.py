@@ -73,7 +73,7 @@ class Space:
         self.states = states
         states.event_queue = event_queue
 
-    def process(self, event: object, /) -> bool:
+    def process(self, event: object, /) -> None:
         """Immediately invoke event handlers for an event.
 
         Syntactic sugar for self.systems.process().
@@ -88,13 +88,10 @@ class Space:
         Args:
             event: The event to process.
 
-        Returns:
-            True if event processing was stopped by a callback, False otherwise.
-
         Raises:
             RuntimeError: If the SystemManager's space is None or deleted.
         """
-        return self.systems.process(event)
+        self.systems.process(event)
 
     def post(self, event: object, /) -> None:
         """Append an event to the end of self's event queue.
