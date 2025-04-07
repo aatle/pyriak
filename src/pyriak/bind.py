@@ -22,26 +22,22 @@ if TYPE_CHECKING:
 
 
 _T = TypeVar("_T")
-_R_co = TypeVar("_R_co", covariant=True)
 
-_Callback: TypeAlias = Callable[["Space", _T], _R_co]
+_Callback: TypeAlias = Callable[["Space", _T], object]
 
 
 _empty_frozenset: Final[frozenset[object]] = frozenset()
 
 
-class Binding(Generic[_T, _R_co]):
+class Binding(Generic[_T]):
     """A Binding wraps the event handler callback with handler info.
 
     bind() returns a Binding. When a system is added to a SystemManager,
-    it searches the system for attributes of type Binding.
-    An event handler is then created for each binding on the system.
+    it searches the system for variables of type Binding.
+    An event handler is then created for each binding on the system,
+    in the same order that the bindings were defined in the module.
 
     Binding forwards calls to the internal callback.
-    Binding supports descriptor access by redirecting it to the internal
-    callback. This is to allow instance methods to be properly invoked as a
-    bound method (for the self argument), if the callback was a function
-    in a class.
 
     Attributes:
         _callback_: The event handler callback wrapped by the Binding.
@@ -51,11 +47,11 @@ class Binding(Generic[_T, _R_co]):
             Often empty, or only containing one key.
     """
 
-    __wrapped__: _Callback[_T, _R_co]
+    __wrapped__: _Callback[_T]
 
     def __init__(
         self,
-        callback: _Callback[_T, _R_co],
+        callback: _Callback[_T],
         event_type: type[_T],
         priority: Any,
         keys: frozenset[Hashable],
@@ -66,23 +62,11 @@ class Binding(Generic[_T, _R_co]):
         self._keys_ = keys
 
     @property
-    def _callback_(self) -> _Callback[_T, _R_co]:
+    def _callback_(self) -> _Callback[_T]:
         return self.__wrapped__
 
-    def __call__(self, space: "Space", event: _T, /) -> _R_co:
+    def __call__(self, space: "Space", event: _T, /) -> object:
         return self._callback_(space, event)
-
-    def __get__(
-        self, obj: object | None, objtype: type | None = None
-    ) -> _Callback[_T, _R_co]:
-        callback = self._callback_
-        try:
-            descr_get: Callable[
-                [_Callback[_T, _R_co], object | None, type | None], _Callback[_T, _R_co]
-            ] = type(callback).__get__  # type: ignore[attr-defined]
-        except AttributeError:
-            return callback
-        return descr_get(callback, obj, objtype)
 
     def __repr__(self) -> str:
         args = (
@@ -95,15 +79,15 @@ class Binding(Generic[_T, _R_co]):
 @overload
 def bind(
     event_type: type[_T], priority: Any, /
-) -> Callable[[_Callback[_T, _R_co]], Binding[_T, _R_co]]: ...
+) -> Callable[[_Callback[_T]], Binding[_T]]: ...
 @overload
 def bind(
     event_type: type[_T], priority: Any, /, *, key: Hashable
-) -> Callable[[_Callback[_T, _R_co]], Binding[_T, _R_co]]: ...
+) -> Callable[[_Callback[_T]], Binding[_T]]: ...
 @overload
 def bind(
     event_type: type[_T], priority: Any, /, *, keys: Iterable[Hashable]
-) -> Callable[[_Callback[_T, _R_co]], Binding[_T, _R_co]]: ...
+) -> Callable[[_Callback[_T]], Binding[_T]]: ...
 def bind(
     event_type: type[_T],
     priority: Any,
@@ -111,10 +95,10 @@ def bind(
     *,
     key: Hashable | _Sentinel = _SENTINEL,
     keys: Iterable[Hashable] | _Sentinel = _SENTINEL,
-) -> Callable[[_Callback[_T, _R_co]], Binding[_T, _R_co]]:
+) -> Callable[[_Callback[_T]], Binding[_T]]:
     """Bind a callback to an event type.
 
-    To use, define a function that takes two arguments, space and event.
+    To use, define a module-level function that takes two arguments, space and event.
     Then, decorate it with a call to bind(), passing in the necessary info.
 
     This creates a binding. When the system is added to the space's SystemManager,
@@ -123,21 +107,21 @@ def bind(
     This does not include subclasses of the event type. The types must be exact.
 
     The priority determines the order in which callbacks are invoked if there
-    are multiple systems or event handlers for that event.
+    are multiple event handlers for that event.
+    This priority only applies within handlers with the same event key or no key.
 
     The optional key or keys further narrow which events are handled.
+    This is only valid for event types with key functions.
     The event must give at least one key that matches the binding,
     if the binding has any keys.
-    This is only valid for event types with key functions.
+    The handler may be invoked multiple times if multiple of the handler's keys
+    are matched, or if the event keys contain duplicates.
 
-    bind() should only be used on attributes directly on the system.
     bind() cannot be used multiple times on the same object.
 
     bind() works on any callable, but the signature should be correct.
     It can be manually invoked with two calls instead of using as a decorator,
     if necessary.
-    The most common place where bind() is used is on a module top-level function,
-    where the module object is the system.
 
     Args:
         event_type: The type of events that the handler will be triggered by.
@@ -178,7 +162,7 @@ def bind(
             f"bind(): keys were provided but no key function exists for {event_type!r}"
         )
 
-    def decorator(callback: _Callback[_T, _R_co], /) -> Binding[_T, _R_co]:
+    def decorator(callback: _Callback[_T], /) -> Binding[_T]:
         if isinstance(callback, Binding):
             raise TypeError("cannot bind same object multiple times")
         return Binding(callback, event_type, priority, keys)

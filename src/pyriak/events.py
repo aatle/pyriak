@@ -25,11 +25,11 @@ from collections.abc import Hashable, Iterator
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
+from pyriak import System
 from pyriak.event_key import set_key as _set_key
 from pyriak.tag_component import tag_types as _tag_types
 
 if TYPE_CHECKING:
-    from pyriak import System
     from pyriak.bind import Binding, _Callback
     from pyriak.entity import Entity
     from pyriak.system_manager import _EventHandler
@@ -110,7 +110,7 @@ class ComponentRemoved(Generic[_T]):
     component: _T
 
 
-def _system_key(event: "SystemAdded | SystemRemoved") -> "System":
+def _system_key(event: "SystemAdded | SystemRemoved") -> System:
     return event.system
 
 
@@ -125,7 +125,7 @@ class SystemAdded:
         system: The system added to the manager.
     """
 
-    system: "System"
+    system: System
 
 
 @_set_key(_system_key)
@@ -139,7 +139,7 @@ class SystemRemoved:
         system: The system removed from the manager.
     """
 
-    system: "System"
+    system: System
 
 
 def _state_type_key(event: "StateAdded | StateRemoved") -> type:
@@ -180,24 +180,24 @@ def _handler_key(event: "EventHandlerAdded | EventHandlerRemoved") -> type:
 
 @dataclass
 class _EventHandlerEvent(Generic[_T]):
-    _binding: "Binding[_T, Any]"
+    _binding: "Binding[_T]"
     _handler: "_EventHandler[_T]"
 
     @property
-    def system(self) -> "System":
-        return self._handler.system
-
-    @property
-    def callback(self) -> "_Callback[_T, Any]":
+    def callback(self) -> "_Callback[_T]":
         return self._handler.callback
-
-    @property
-    def name(self) -> str:
-        return self._handler.name
 
     @property
     def priority(self) -> Any:
         return self._binding._priority_
+
+    @property
+    def system(self) -> System:
+        return self._handler.system
+
+    @property
+    def name(self) -> str:
+        return self._handler.name
 
     @property
     def event_type(self) -> type[_T]:
@@ -230,7 +230,7 @@ class EventHandlerAdded(_EventHandlerEvent[_T]):
     Attributes:
         system: The system of the event handler.
         callback: The callback of the event handler.
-        name: The attribute name of the binding on the system.
+        name: The function variable name of the binding on the system.
         priority: The priority of the event handler.
         event_type: The event type of the event handler.
         keys: The keys of the event handler. May be empty.
@@ -249,7 +249,7 @@ class EventHandlerRemoved(_EventHandlerEvent[_T]):
     Attributes:
         system: The system of the event handler.
         callback: The callback of the event handler.
-        name: The attribute name of the binding on the system.
+        name: The function variable name of the binding on the system.
         priority: The priority of the event handler.
         event_type: The event type of the event handler.
         keys: The keys of the event handler. May be empty.

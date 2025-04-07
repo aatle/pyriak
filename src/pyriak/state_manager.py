@@ -21,7 +21,7 @@ class StateManager:
     The StateManager can be thought of as the program's dedicated Entity
     instance, where global and unique data can be put, e.g. global time.
     A common use is a system storing data in a state that it 'owns',
-    as systems are not allowed to have any mutable data themselves.
+    as systems shouldn't have any mutable data themselves.
 
     The general purpose of the StateManager is to provide storage for data
     that does not make sense to have multiple of, nor put in an entity.

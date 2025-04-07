@@ -43,8 +43,9 @@ __all__ = [
     "tag_types",
 ]
 
-from collections.abc import Hashable as _Hashable, MutableSequence as _MutableSequence
+from collections.abc import MutableSequence as _MutableSequence
 from enum import Enum as _Enum
+from types import ModuleType as _ModuleType
 from typing import (
     Any as _Any,
     Final as _Final,
@@ -53,7 +54,7 @@ from typing import (
 )
 from weakref import ref as _weakref
 
-System: _TypeAlias = _Hashable
+System: _TypeAlias = _ModuleType
 
 
 EventQueue: _TypeAlias = _MutableSequence[object]
@@ -81,4 +82,4 @@ NULL_ID: _Final[EntityId] = EntityId(0)
 
 
 # cleanup namespace
-del _Hashable, _MutableSequence, _Enum, _weakref
+del _MutableSequence, _Enum, _ModuleType, _weakref
