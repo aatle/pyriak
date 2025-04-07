@@ -184,20 +184,20 @@ class _EventHandlerEvent(Generic[_T]):
     _handler: "_EventHandler[_T]"
 
     @property
-    def system(self) -> System:
-        return self._handler.system
-
-    @property
     def callback(self) -> "_Callback[_T, Any]":
         return self._handler.callback
 
     @property
-    def name(self) -> str:
-        return self._handler.name
-
-    @property
     def priority(self) -> Any:
         return self._binding._priority_
+
+    @property
+    def system(self) -> System:
+        return self._handler.system
+
+    @property
+    def name(self) -> str:
+        return self._handler.name
 
     @property
     def event_type(self) -> type[_T]:

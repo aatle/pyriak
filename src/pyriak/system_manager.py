@@ -45,16 +45,16 @@ class _EventHandler(NamedTuple, Generic[_T]):
     Priority comparisons involving equality such as >= are not implemented.
 
     Attributes:
-        system: The system the event handler belongs to.
         callback: The event handler callback to be invoked.
-        name: The function variable name of the binding on the system.
         priority: The priority of the event handler given in bind().
+        system: The system the event handler belongs to.
+        name: The function variable name of the binding on the system.
     """
 
-    system: System
     callback: _Callback[_T, Any]
-    name: str
     priority: Any
+    system: System
+    name: str
 
     def __call__(self, space: "Space", event: _T, /) -> Any:
         return self.callback(space, event)
@@ -373,7 +373,7 @@ class SystemManager:
         return [
             (
                 binding,
-                _EventHandler(system, binding._callback_, name, binding._priority_),
+                _EventHandler(binding._callback_, binding._priority_, system, name),
             )
             for name, binding in system.__dict__.items()
             if isinstance(binding, Binding)
